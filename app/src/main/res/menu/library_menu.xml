@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+<!--    <item-->
+<!--        android:id="@+id/app_bar_search"-->
+<!--        android:icon="@drawable/ic_search_black_24dp"-->
+<!--        android:title="Search"-->
+<!--        app:showAsAction="ifRoom|collapseActionView"-->
+<!--        app:actionViewClass="androidx.appcompat.widget.SearchView" />-->
+
+    <!--TODO add a swipe to refresh functionality-->
+    <!--    <item-->
+<!--        android:id="@+id/library_menu_refresh"-->
+<!--        app:showAsAction="never"-->
+<!--        android:title="@string/refresh"/>-->
+
+    <item
+        android:id="@+id/library_add_audiobook_directory"
+        android:title="@string/add_audiobook_folder"
+        android:icon="@drawable/library_menu_add_directory_icon"
+        app:showAsAction="ifRoom"/>
+
+    <item
+        android:id="@+id/library_settings"
+        android:title="@string/settings"
+        app:showAsAction="never" />
+
+</menu>

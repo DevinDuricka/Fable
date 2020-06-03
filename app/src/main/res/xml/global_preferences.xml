@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <PreferenceCategory
+        app:key="playback_category"
+        app:title="Playback">
+
+        <EditTextPreference
+            android:defaultValue="10"
+            android:digits="0123456789"
+            android:inputType="number"
+            android:key="rewind_seconds"
+            android:selectAllOnFocus="true"
+            android:singleLine="true"
+            android:title="Rewind seconds"
+            app:useSimpleSummaryProvider="true" />
+
+        <EditTextPreference
+            android:defaultValue="30"
+            android:digits="0123456789"
+            android:inputType="number"
+            android:key="fastforward_seconds"
+            android:selectAllOnFocus="true"
+            android:singleLine="true"
+            android:title="Fast forward seconds"
+            app:useSimpleSummaryProvider="true" />
+
+        <SeekBarPreference
+            android:inputType="numberDecimal"
+            android:key="playback_speed_seekbar"
+            android:max="80"
+            android:selectAllOnFocus="true"
+            app:title="Playback Speed: "
+            app:defaultValue="10"
+            app:isPreferenceVisible="true"
+            app:min="1"
+            app:seekBarIncrement="1"
+            app:updatesContinuously="true"/>
+
+    </PreferenceCategory>
+    <PreferenceCategory>
+        <ListPreference
+            android:key="theme"
+            android:title="Theme"
+            android:entries="@array/theme_names_array"
+            android:entryValues="@array/theme_int_array"
+            app:useSimpleSummaryProvider="true"
+            android:defaultValue="-1"/>
+
+    </PreferenceCategory>
+
+<!--    <PreferenceCategory>-->
+<!--        <Preference-->
+<!--            app:key="remove_directory"-->
+<!--            app:title="Remove Audiobook Directory"-->
+<!--            app:summary="Remove directory from scan"/>-->
+
+<!--    </PreferenceCategory>-->
+
+</PreferenceScreen>

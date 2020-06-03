@@ -1,0 +1,9 @@
+<resources>
+    <string name="app_name">Fable</string>
+    <string name="add_audiobook_folder">Add Audiobook Folder</string>
+    <string name="settings">Settings</string>
+    <string name="refresh">Refresh</string>
+    <string name="in_progress">In Progress</string>
+    <string name="not_started">Not Started</string>
+    <string name="finished">Finished</string>
+</resources>

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <color name="colorPrimary">#6200EE</color>
+    <color name="colorPrimaryDark">#3700B3</color>
+    <color name="colorAccent">#03DAC5</color>
+    <color name="darker_grey">#aaaaaa</color>
+    <color name="mtrl_text_btn_text_color_selector" tools:override="true">@color/colorAccent</color>
+</resources>

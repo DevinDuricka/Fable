@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item
+        android:id="@+id/audiobook_playback_speed"
+        android:title="Playback Speed"
+        android:actionLayout="@layout/audioplayer_menu_playback_speed_icon_with_text"
+        app:showAsAction="always"/>
+    <item
+        android:id="@+id/audiobook_sleep_timer"
+        android:title="Sleep Timer"
+        app:actionLayout="@layout/sleeptimer_with_text"
+        app:showAsAction="always" />
+
+    <item
+        android:id="@+id/audiobook_player_to_app_settings"
+        android:title="App Settings"
+        app:showAsAction="never"/>
+</menu>

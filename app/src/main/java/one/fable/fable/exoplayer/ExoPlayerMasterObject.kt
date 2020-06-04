@@ -204,7 +204,9 @@ object ExoPlayerMasterObject {
     suspend fun checkFileForChapterInfo(uri: Uri, context: Context) {
         var track = audiobookDao.getTrack(uri) ?: return
 
-        if (!track.scanSourceNames.contains("OverDrive")) {
+        if (track.validSource.isNotEmpty()) {return}
+
+        if (!track.scannedSourceNames.contains("OverDrive")) {
             withContext(Dispatchers.IO) {
 
                 val contentResolver = context.contentResolver
@@ -256,11 +258,12 @@ object ExoPlayerMasterObject {
                                 )
                             )
                         }
+                        track.validSource = "OverDrive"
                     }
                 }
 
                 //track.hasBeenScanned = true
-                track.scanSourceNames += "OverDrive "
+                track.scannedSourceNames += "OverDrive "
                 audiobookDao.updateTrack(track)
             }
 

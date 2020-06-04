@@ -73,6 +73,7 @@
                     android:layout_width="0dp"
                     android:layout_height="4dp"
                     android:transitionName="progressbar"
+                    android:visibility="gone"
                     app:layout_constraintBottom_toBottomOf="@id/player_view_cover"
                     app:layout_constraintEnd_toEndOf="@id/player_view_cover"
                     app:layout_constraintStart_toStartOf="@id/player_view_cover" />

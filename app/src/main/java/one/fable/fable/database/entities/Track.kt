@@ -18,7 +18,9 @@ data class Track(
 
     var trackName : String?,
 
-    var scanSourceNames: String = "",
+    var scannedSourceNames: String = "",
+
+    var validSource : String = "",
 
     var trackLength : Long? = 0L
 )

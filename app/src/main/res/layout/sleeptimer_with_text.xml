@@ -7,14 +7,14 @@
     xmlns:tools="http://schemas.android.com/tools">
 
 
-    <ImageView
+    <androidx.appcompat.widget.AppCompatImageView
         android:id="@+id/sleep_timer_icon"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center"
         app:srcCompat="@drawable/ic_brightness_2_black_24dp" />
 
-    <TextView
+    <androidx.appcompat.widget.AppCompatTextView
         android:id="@+id/sleep_timer_text"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"

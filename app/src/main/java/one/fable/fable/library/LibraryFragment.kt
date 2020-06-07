@@ -11,6 +11,7 @@ import androidx.appcompat.widget.SearchView
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.fragment.app.Fragment
 import androidx.core.view.doOnPreDraw
+import androidx.lifecycle.LiveData
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.fragment.findNavController
@@ -20,6 +21,10 @@ import com.google.android.material.tabs.TabLayoutMediator
 import one.fable.fable.MainActivity
 
 import one.fable.fable.R
+import one.fable.fable.database.entities.Audiobook
+import one.fable.fable.database.entities.PROGRESS_FINISHED
+import one.fable.fable.database.entities.PROGRESS_IN_PROGRESS
+import one.fable.fable.database.entities.PROGRESS_NOT_STARTED
 import one.fable.fable.databinding.LibraryFragmentBinding
 import one.fable.fable.databinding.LibraryTabFragmentBinding
 import one.fable.fable.exoplayer.ExoPlayerMasterObject
@@ -28,16 +33,16 @@ import timber.log.Timber
 import java.lang.Exception
 
 val libraryTabText = arrayOf(
-    R.string.in_progress,
     R.string.not_started,
+    R.string.in_progress,
     R.string.finished
 )
 
 val flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
 
-
 class LibraryFragment : Fragment(R.layout.library_fragment) {
     private lateinit var binding : LibraryFragmentBinding
+    private lateinit var libraryFragmentViewModel: LibraryFragmentViewModel
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         postponeEnterTransition()
@@ -45,6 +50,7 @@ class LibraryFragment : Fragment(R.layout.library_fragment) {
         setHasOptionsMenu(true)
         binding = LibraryFragmentBinding.bind(view)
         binding.setLifecycleOwner(this)
+        libraryFragmentViewModel = ViewModelProvider(requireActivity()).get(LibraryFragmentViewModel::class.java)
 
         //TODO: actually do something with the swipe to refresh functionality
 //        binding.swipeRefreshLayoutLibrary.setOnRefreshListener(object : SwipeRefreshLayout.OnRefreshListener{
@@ -59,16 +65,12 @@ class LibraryFragment : Fragment(R.layout.library_fragment) {
         //binding.swipeRefreshLayoutLibrary.setColorSchemeColors(resources.getColor(R.color.colorAccent) )
         //binding.swipeRefreshLayoutLibrary.isRefreshing = true
 
-        val libraryPagerAdapter = LibraryPagerAdapter(this)
+        val libraryPagerAdapter = LibraryPagerAdapter(this, libraryFragmentViewModel)
         binding.viewPagerLibrary.adapter = libraryPagerAdapter
-
 
         TabLayoutMediator(binding.tabLayoutLibrary, binding.viewPagerLibrary){tab, position ->
             tab.text = getString(libraryTabText[position])
             }.attach()
-
-        //Load on the "In Progress" Tab
-        binding.tabLayoutLibrary.getTabAt(0)?.select()
 
         binding.libraryExoplayer.player = ExoPlayerMasterObject.exoPlayer
         binding.libraryExoplayer.showTimeoutMs = -1
@@ -106,6 +108,16 @@ class LibraryFragment : Fragment(R.layout.library_fragment) {
         } else {
             binding.libraryExoplayer.visibility = View.GONE
         }
+
+        libraryFragmentViewModel.inProgressAudiobooks.observe(viewLifecycleOwner, Observer {
+            it?.let {
+                if (it.isNullOrEmpty()){
+                    binding.tabLayoutLibrary.getTabAt(PROGRESS_NOT_STARTED)?.select()
+                } else {
+                    binding.tabLayoutLibrary.getTabAt(PROGRESS_IN_PROGRESS)?.select()
+                }
+            }
+        })
 
         view.doOnPreDraw { startPostponedEnterTransition() }
     }
@@ -168,52 +180,69 @@ class LibraryFragment : Fragment(R.layout.library_fragment) {
         startActivityForResult(intent, OPEN_DIRECTORY_REQUEST_CODE)
     }
 
+    class LibraryPagerAdapter(fragment: Fragment, val viewModel: LibraryFragmentViewModel) : FragmentStateAdapter(fragment){
+        override fun getItemCount(): Int {
+            return libraryTabText.size
+        }
+
+        override fun createFragment(position: Int): Fragment {
+            return LibraryTabFragment(position, viewModel)
+        }
+    }
+
+
+    class LibraryTabFragment(private val position: Int,
+                             private val viewModel: LibraryFragmentViewModel)
+        : Fragment(R.layout.library_tab_fragment){
+
+        private lateinit var binding : LibraryTabFragmentBinding
+        private val libraryItemAdapter = LibraryFragmentAdapter()
+
+        override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+            Timber.i("LibraryTabFragment Created")
+            super.onViewCreated(view, savedInstanceState)
+
+            binding = LibraryTabFragmentBinding.bind(view)
+            binding.lifecycleOwner = parentFragment
+
+            binding.recyclerViewLibrary.adapter = libraryItemAdapter
+
+            when (position){
+                PROGRESS_IN_PROGRESS -> {
+                    viewModel.inProgressAudiobooks.observe(viewLifecycleOwner, Observer {
+                        it?.let {
+                            libraryItemAdapter.submitList(it)
+                        }
+                    })
+                }
+                PROGRESS_NOT_STARTED -> {
+                    viewModel.notStartedAudiobooks.observe(viewLifecycleOwner, Observer {
+                        it?.let {
+                            libraryItemAdapter.submitList(it)
+                        }
+                    })
+                }
+                PROGRESS_FINISHED -> {
+                    viewModel.completeAudiobooks.observe(viewLifecycleOwner, Observer {
+                        it?.let {
+                            libraryItemAdapter.submitList(it)
+                        }
+                    })
+                }
+            }
+
+
+
+        }
+    }
+
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         Timber.i(data.toString())
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode == OPEN_DIRECTORY_REQUEST_CODE && resultCode == Activity.RESULT_OK) {
             val directoryUri = data?.data ?: return
             (activity as MainActivity).takePersistablePermissionsToDatabaseEntries(directoryUri)
-
         }
     }
 
-}
-
-class LibraryPagerAdapter(fragment: Fragment) : FragmentStateAdapter(fragment){
-    override fun getItemCount(): Int {
-        return libraryTabText.size
-    }
-
-    override fun createFragment(position: Int): Fragment {
-        return LibraryTabFragment(position)
-    }
-}
-
-
-class LibraryTabFragment(private val position: Int) : Fragment(R.layout.library_tab_fragment){
-    private lateinit var tabViewModel: LibraryTabViewModel
-    private lateinit var binding : LibraryTabFragmentBinding
-    private val libraryItemAdapter = LibraryFragmentAdapter()
-
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        Timber.i("LibraryTabFragment Created")
-        super.onViewCreated(view, savedInstanceState)
-
-        binding = LibraryTabFragmentBinding.bind(view)
-        binding.lifecycleOwner = this
-
-        val viewModelFactory = LibraryTabViewModelFactory(position)
-        val tabViewModel = ViewModelProvider(this, viewModelFactory).get(LibraryTabViewModel::class.java)
-        //tabViewModel = ViewModelProvider(requireActivity()).get(LibraryTabViewModel::class.java)
-
-        binding.recyclerViewLibrary.adapter = libraryItemAdapter
-
-        tabViewModel.audiobooks.observe(viewLifecycleOwner, Observer {
-            it?.let {
-                libraryItemAdapter.submitList(it)
-            }
-        })
-
-    }
 }

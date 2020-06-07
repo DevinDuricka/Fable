@@ -144,6 +144,8 @@ class AudioPlayerService : Service() {
 
         exoPlayerNotificationManager.setPlayer(exoPlayer)
 
+        //Todo: Implement the mediabuttonreceiver for api 19 https://developer.android.com/guide/topics/media-apps/mediabuttons
+
         mediaSession = MediaSessionCompat(applicationContext, Context.MEDIA_SESSION_SERVICE)
         mediaSession.isActive = true
         exoPlayerNotificationManager.setMediaSessionToken(mediaSession.sessionToken)

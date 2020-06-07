@@ -206,7 +206,7 @@ class MainActivity : AppCompatActivity() {
                                     val mediaMetadataRetriever = MediaMetadataRetriever()
                                     mediaMetadataRetriever.setDataSource(applicationContext, childUri)
                                     duration = mediaMetadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION).toLong()
-                                    title = mediaMetadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ALBUM)
+                                    (mediaMetadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ALBUM))?.let { title = it }
                                     author = mediaMetadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ARTIST)
                                     mediaMetadataRetriever.release()
                                     inCloud = false

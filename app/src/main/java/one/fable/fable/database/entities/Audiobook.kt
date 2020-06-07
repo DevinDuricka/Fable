@@ -3,8 +3,8 @@ package one.fable.fable.database.entities
 import android.net.Uri
 import androidx.room.*
 
-const val PROGRESS_IN_PROGRESS = 0
-const val PROGRESS_NOT_STARTED = 1
+const val PROGRESS_NOT_STARTED = 0
+const val PROGRESS_IN_PROGRESS = 1
 const val PROGRESS_FINISHED = 2
 
 @Entity(tableName = "audiobook")

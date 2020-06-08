@@ -29,11 +29,11 @@ interface AudiobookDao {
     @Query("SELECT * FROM audiobook where audiobookTitle = :title")
     fun getAllAudiobookTracks(title : String): List<AudiobookWithTracks>
 
-    @Query("SELECT * FROM tracks where audiobookTitle = :title order by trackName ASC")
+    @Query("SELECT * FROM tracks where audiobookTitle = :title order by fileName ASC")
     fun getAudiobookTracks(title : String): List<Track>
 
     @Transaction
-    @Query("SELECT * FROM tracks where audiobookTitle = :title order by trackName ASC")
+    @Query("SELECT * FROM tracks where audiobookTitle = :title order by fileName ASC")
     fun getAudiobookTracksWithChapters(title : String): List<TrackWithChapters>
 
     @Query("SELECT * FROM tracks")

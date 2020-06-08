@@ -16,7 +16,9 @@ data class Track(
 
     //val chapterOrder : Int,
 
-    var trackName : String?,
+    var trackTitle : String?,
+
+    var fileName : String?,
 
     var scannedSourceNames: String = "",
 

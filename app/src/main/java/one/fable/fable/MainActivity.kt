@@ -7,9 +7,7 @@ import android.net.Uri
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.provider.DocumentsContract
-import android.util.Log
 import android.widget.Toast
-import androidx.appcompat.app.AppCompatDelegate
 import androidx.documentfile.provider.DocumentFile
 import androidx.navigation.Navigation
 import androidx.navigation.fragment.NavHostFragment
@@ -19,7 +17,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import one.fable.fable.database.entities.*
 import one.fable.fable.exoplayer.AudioPlayerService
-import one.fable.fable.library.LibraryFragment
 import one.fable.fable.library.flags
 import timber.log.Timber
 import java.lang.Exception
@@ -185,10 +182,11 @@ class MainActivity : AppCompatActivity() {
                     cursor@ while (cursor.moveToNext()) {
 
                         val id = cursor.getString(idColumn)
+                        val fileName = cursor.getString(nameColumn)
+                        var trackTitle = fileName
+                        val mimeType = cursor.getString(fileTypeColumn)
                         val childUri = DocumentsContract.buildDocumentUriUsingTree(uri, id)
 
-                        val mimeType = cursor.getString(fileTypeColumn)
-                        val name = cursor.getString(nameColumn)
 
                         //var title :String? = null
                         var author :String? = null
@@ -208,6 +206,7 @@ class MainActivity : AppCompatActivity() {
                                     duration = mediaMetadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION).toLong()
                                     (mediaMetadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ALBUM))?.let { title = it }
                                     author = mediaMetadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ARTIST)
+                                    (mediaMetadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_TITLE))?.let { trackTitle = it }
                                     mediaMetadataRetriever.release()
                                     inCloud = false
                                 }
@@ -216,7 +215,11 @@ class MainActivity : AppCompatActivity() {
 //                                    title = documentFile?.name ?: continue@cursor
 //                                }
 
-                                audiobooksDao.insertTrack(Track(childUri, title, name, trackLength = duration))
+                                audiobooksDao.insertTrack(Track(trackUri =  childUri,
+                                    audiobookTitle = title,
+                                    fileName = fileName,
+                                    trackTitle = trackTitle,
+                                    trackLength = duration))
 
                                 val audiobook = audiobooksDao.getAudiobook(title)
                                 if (audiobook == null){

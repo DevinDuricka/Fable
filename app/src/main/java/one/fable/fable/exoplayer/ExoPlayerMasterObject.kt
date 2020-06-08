@@ -126,7 +126,7 @@ object ExoPlayerMasterObject {
 
             //If the track has no chapter data embeded, use the whole track as the window (a psuedo-chapter)
             if (track.chapters.isEmpty()) {
-                audioPlaybackWindows.add(AudioPlaybackWindow(track.track.trackName))
+                audioPlaybackWindows.add(AudioPlaybackWindow(track.track.trackTitle))
                 concatenatingMediaSource.addMediaSource(mediaSource)
             } else {
 

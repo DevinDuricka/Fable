@@ -109,15 +109,16 @@ class LibraryFragment : Fragment(R.layout.library_fragment) {
             binding.libraryExoplayer.visibility = View.GONE
         }
 
-        libraryFragmentViewModel.inProgressAudiobooks.observe(viewLifecycleOwner, Observer {
-            it?.let {
-                if (it.isNullOrEmpty()){
-                    binding.tabLayoutLibrary.getTabAt(PROGRESS_NOT_STARTED)?.select()
-                } else {
-                    binding.tabLayoutLibrary.getTabAt(PROGRESS_IN_PROGRESS)?.select()
-                }
+        if (libraryFragmentViewModel.firstLoad) {
+            if (libraryFragmentViewModel.anyAudiobook != null){
+                binding.tabLayoutLibrary.getTabAt(PROGRESS_IN_PROGRESS)?.select()
+                binding.viewPagerLibrary.currentItem = PROGRESS_IN_PROGRESS
+            } else {
+                binding.tabLayoutLibrary.getTabAt(PROGRESS_NOT_STARTED)?.select()
+                binding.viewPagerLibrary.currentItem = PROGRESS_NOT_STARTED
             }
-        })
+            libraryFragmentViewModel.firstLoad = false
+        }
 
         view.doOnPreDraw { startPostponedEnterTransition() }
     }

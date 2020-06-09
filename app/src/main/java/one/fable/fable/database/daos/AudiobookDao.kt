@@ -22,6 +22,9 @@ interface AudiobookDao {
     @Query("select * from audiobook where progressState = $PROGRESS_IN_PROGRESS AND canReadParentDirectory = 1 order by lastPlayedTimestamp DESC")
     fun getInProgressAudiobooks(): LiveData<List<Audiobook>>
 
+    @Query("select * from audiobook where progressState = $PROGRESS_IN_PROGRESS AND canReadParentDirectory = 1 LIMIT 1")
+    fun getAnyInProgressAudiobooks(): Audiobook?
+
     @Query("select * from audiobook where progressState = $PROGRESS_FINISHED AND canReadParentDirectory = 1 order by lastPlayedTimestamp DESC")
     fun getFinishedAudiobooks(): LiveData<List<Audiobook>>
 

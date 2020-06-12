@@ -7,20 +7,21 @@ import android.net.Uri
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.provider.DocumentsContract
+import android.provider.MediaStore
 import android.widget.Toast
 import androidx.documentfile.provider.DocumentFile
 import androidx.navigation.Navigation
 import androidx.navigation.fragment.NavHostFragment
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+import androidx.palette.graphics.Palette
+import com.getkeepsafe.taptargetview.TapTarget
+import com.getkeepsafe.taptargetview.TapTargetView
+import kotlinx.coroutines.*
 import one.fable.fable.database.entities.*
 import one.fable.fable.exoplayer.AudioPlayerService
 import one.fable.fable.library.flags
 import timber.log.Timber
-import java.lang.Exception
 import java.util.concurrent.TimeUnit
+import kotlin.Exception
 
 /* Notes/URLs
 https://commonsware.com/blog/2019/11/23/scoped-storage-stories-documentscontract.html
@@ -42,6 +43,8 @@ class MainActivity : AppCompatActivity() {
         //takePersistablePermissionsToDatabaseEntries()
         scanDirectories()
         volumeControlStream = AudioManager.STREAM_MUSIC
+
+
 
 
     }
@@ -198,7 +201,7 @@ class MainActivity : AppCompatActivity() {
                             getAllAudioInDirectory(childUri)
                         //} else if (mimeType.startsWith("audio/") && mimeType != "audio/x-ms-wax" ) {
                         } else if (mimeType =="audio/mpeg") {
-                            if (audiobooksDao.getTrack(childUri) == null){
+                            if (audiobooksDao.getTrack(documentID = id) == null){
                                 val authority = childUri.authority ?: continue@cursor
                                 if(isLocal(authority)){
                                     val mediaMetadataRetriever = MediaMetadataRetriever()
@@ -215,11 +218,16 @@ class MainActivity : AppCompatActivity() {
 //                                    title = documentFile?.name ?: continue@cursor
 //                                }
 
-                                audiobooksDao.insertTrack(Track(trackUri =  childUri,
-                                    audiobookTitle = title,
-                                    fileName = fileName,
-                                    trackTitle = trackTitle,
-                                    trackLength = duration))
+                                try {
+                                    audiobooksDao.insertTrack(Track(trackUri =  childUri,
+                                        documentID = id,
+                                        audiobookTitle = title,
+                                        fileName = fileName,
+                                        trackTitle = trackTitle,
+                                        trackLength = duration))
+                                } catch (e: Exception){
+                                    Timber.e(e)
+                                }
 
                                 val audiobook = audiobooksDao.getAudiobook(title)
                                 if (audiobook == null){
@@ -259,13 +267,68 @@ class MainActivity : AppCompatActivity() {
                         var audiobook = audiobooksDao.getAudiobook(title)
                         if (audiobook != null){
                             images.sortBy { it.size }
+                            val highestResImage = images.last().uri
                             audiobook.imgThumbnail = images.last().uri
                             audiobooksDao.updateAudiobook(audiobook)
+                            val paletteJob = Job()
+                            CoroutineScope(Dispatchers.IO + paletteJob).launch {
+                                val databaseCover = audiobooksDao.getBookCover(highestResImage)
+                                if (databaseCover == null) {
 
-//                            images[-1].uri
-//                            if (audiobook.imgThumbnail == null && cover != null) {
-//                                audiobook.imgThumbnail = cover!!.uri
-//                            }
+                                    val bitmapSource = MediaStore.Images.Media.getBitmap(
+                                        contentResolver,
+                                        highestResImage
+                                    )
+                                    val palette = Palette.from(bitmapSource).generate()
+                                    val cover = BookCover(uri = highestResImage, bookTitle = title)
+
+                                    palette.lightVibrantSwatch?.let {
+                                        cover.lightVibrantSwatch_bodyTextColor = it.bodyTextColor
+                                        cover.lightVibrantSwatch_titleTextColor = it.titleTextColor
+                                        cover.lightVibrantSwatch_rgb = it.rgb
+                                    }
+
+                                    palette.vibrantSwatch?.let {
+                                        cover.vibrantSwatch_bodyTextColor = it.bodyTextColor
+                                        cover.vibrantSwatch_titleTextColor = it.titleTextColor
+                                        cover.vibrantSwatch_rgb = it.rgb
+                                    }
+
+                                    palette.darkVibrantSwatch?.let {
+                                        cover.darkVibrantSwatch_bodyTextColor = it.bodyTextColor
+                                        cover.darkVibrantSwatch_titleTextColor = it.titleTextColor
+                                        cover.darkVibrantSwatch_rgb = it.rgb
+                                    }
+
+                                    palette.lightMutedSwatch?.let {
+                                        cover.lightMutedSwatch_bodyTextColor = it.bodyTextColor
+                                        cover.lightMutedSwatch_titleTextColor = it.titleTextColor
+                                        cover.lightMutedSwatch_rgb = it.rgb
+                                    }
+
+                                    palette.mutedSwatch?.let {
+                                        cover.mutedSwatch_bodyTextColor = it.bodyTextColor
+                                        cover.mutedSwatch_titleTextColor = it.titleTextColor
+                                        cover.mutedSwatch_rgb = it.rgb
+                                    }
+
+                                    palette.darkMutedSwatch?.let {
+                                        cover.darkMutedSwatch_bodyTextColor = it.bodyTextColor
+                                        cover.darkMutedSwatch_titleTextColor = it.titleTextColor
+                                        cover.darkMutedSwatch_rgb = it.rgb
+                                    }
+
+                                    palette.dominantSwatch?.let {
+                                        cover.dominantSwatch_bodyTextColor = it.bodyTextColor
+                                        cover.dominantSwatch_titleTextColor = it.titleTextColor
+                                        cover.dominantSwatch_rgb = it.rgb
+                                    }
+
+                                    audiobooksDao.insertBookCover(cover)
+
+                                }
+                            }
+
                         }
                     }
 

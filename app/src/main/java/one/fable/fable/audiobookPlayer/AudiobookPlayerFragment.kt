@@ -1,16 +1,19 @@
 package one.fable.fable.audiobookPlayer
 
+import android.annotation.SuppressLint
 import android.app.Dialog
 import android.content.Context
 import android.content.DialogInterface
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
+import android.os.Handler
 import android.transition.TransitionInflater
 import android.util.Log
 import android.view.*
 import android.widget.*
 import androidx.appcompat.app.AlertDialog
+import androidx.appcompat.view.menu.ActionMenuItemView
 import androidx.fragment.app.Fragment
 import androidx.core.view.doOnPreDraw
 import androidx.core.view.marginTop
@@ -20,6 +23,10 @@ import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.fragment.FragmentNavigatorExtras
 import androidx.navigation.fragment.findNavController
+import androidx.preference.PreferenceManager
+import com.getkeepsafe.taptargetview.TapTarget
+import com.getkeepsafe.taptargetview.TapTargetSequence
+import com.getkeepsafe.taptargetview.TapTargetView
 import kotlinx.android.synthetic.main.exo_player_control_view.view.*
 import one.fable.fable.MainActivity
 import one.fable.fable.R
@@ -42,15 +49,11 @@ class AudiobookPlayerFragment : Fragment(R.layout.audiobook_player_fragment) {
 
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        //val intent = Intent(context, AudioPlayerService::class.java)
-        //startService(intent)
-        //context?.let { Util.startForegroundService(it, intent) }
-
         (activity as MainActivity).startAudioPlayerService()
 
 
         super.onViewCreated(view, savedInstanceState)
-        setHasOptionsMenu(true)
+        //setHasOptionsMenu(true)
         postponeEnterTransition()
 
         sharedElementEnterTransition = TransitionInflater.from(context)
@@ -107,85 +110,182 @@ class AudiobookPlayerFragment : Fragment(R.layout.audiobook_player_fragment) {
             //findNavController().navigate(AudiobookPlayerFragmentDirections.actionAudiobookPlayerFragmentToTrackListFragment(view.height/2), extras)
         }
 
-        //binding.playerViewCover.
+        binding.audiobookPlayerAppBar.setOnMenuItemClickListener { item: MenuItem? ->
+            when (item?.itemId){
+                R.id.audiobook_playback_speed -> {
+                    playbackSpeedPicker(requireContext())
+                    true
+                }
+                R.id.audiobook_sleep_timer -> {
+
+                    if (ExoPlayerMasterObject.sleepTimerText.value.isNullOrEmpty()) {
+                        sleepTimerNumberPicker(requireContext())
+                    } else {
+                        cancelOrPauseSleepTimer(requireContext())
+                        Timber.i("Sleep Timer Running")
+                    }
+                    true
+                }
+                R.id.audiobook_player_to_app_settings -> {
+                    findNavController().navigate(R.id.action_audiobookPlayerFragment_to_globalSettingsFragment)
+                    true
+                }
+                else -> false
+            }
+        }
+
+        //https://stackoverflow.com/questions/44514025/get-menuitems-view-reference-for-taptargetview
+        Handler().post(object : Runnable {
+            @SuppressLint("RestrictedApi")
+            override fun run() {
+                val sleepTimer = requireActivity().findViewById<FrameLayout>(R.id.audiobook_sleep_timer)
+                //val sleepTimer = activity.findViewById<ActionMenuItemView>(R.id.audiobook_sleep_timer)
+
+                sleepTimerTextView = requireActivity().findViewById(R.id.sleep_timer_text)
+                sleepTimer.setOnClickListener {                     if (ExoPlayerMasterObject.sleepTimerText.value.isNullOrEmpty()) {
+                                        sleepTimerNumberPicker(requireContext())
+                                    } else {
+                                        cancelOrPauseSleepTimer(requireContext())
+                                        Timber.i("Sleep Timer Running")
+                                    } }
+                val timerObserver = Observer<String> { timeRemaining ->
+                    sleepTimerTextView.text = timeRemaining
+                }
+                ExoPlayerMasterObject.sleepTimerText.observe(viewLifecycleOwner, timerObserver)
+                val playbackSpeed = requireActivity().findViewById<ActionMenuItemView>(R.id.audiobook_playback_speed)
+                val playbackSpeedObserver = Observer<String> { exoPlayerPlaybackSpeed ->
+                    playbackSpeed.setTitle(exoPlayerPlaybackSpeed)
+                }
+                ExoPlayerMasterObject.playbackSpeed.observe(viewLifecycleOwner, playbackSpeedObserver)
+
+                val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
+                val firstAudiobookLoad = sharedPreferences.getBoolean("first_audiobook_load", true)
+                if (firstAudiobookLoad) {
+                    try {
+                        TapTargetSequence(activity).targets(
+                            TapTarget.forView(
+                                requireActivity().findViewById<ActionMenuItemView>(R.id.audiobook_playback_speed),
+                                "Change playback speed",
+                                "The default speed can also be changed in the app settings"
+                            ),
+                            TapTarget.forView(
+                                requireActivity().findViewById<FrameLayout>(R.id.audiobook_sleep_timer),
+                                "Set a sleep timer",
+                                "Your book will automatically pause at the end of the timer"
+                            )
+                        ).start()
+                    } catch (e: Exception) {
+                        Timber.e(e)
+                    }
+                    sharedPreferences.edit().putBoolean("first_audiobook_load", false).apply()
+                }
+            }
+        })
+
+
 
         view.doOnPreDraw { startPostponedEnterTransition() }
-    }
-
-
-    override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
-        inflater.inflate(R.menu.audiobook_player_menu, menu)
-        super.onCreateOptionsMenu(menu, inflater)
-
-        val sleepTimer = menu.findItem(R.id.audiobook_sleep_timer)
-        val sleepTimerActionView = sleepTimer.actionView
-
-        sleepTimerTextView = sleepTimerActionView.findViewById<TextView>(R.id.sleep_timer_text)
-        sleepTimerActionView.setOnClickListener { onOptionsItemSelected(sleepTimer) }
-        val timerObserver = Observer<String> { timeRemaining ->
-            sleepTimerTextView.text = timeRemaining
-        }
-        ExoPlayerMasterObject.sleepTimerText.observe(this, timerObserver)
-
-        val playbackSpeed = menu.findItem(R.id.audiobook_playback_speed)
-        //playbackSpeed.title = "2.0x"
-        val playbackSpeedActionView = playbackSpeed.actionView
-
-        //val playbackSpeedTextView = playbackSpeedActionView.findViewById<TextView>(R.id.playback_speed_text)
-        //playbackSpeedActionView.setOnClickListener { onOptionsItemSelected(playbackSpeed) }
-        val playbackSpeedObserver = Observer<String> { exoPlayerPlaybackSpeed ->
-            playbackSpeed.title = exoPlayerPlaybackSpeed
-        }
-        ExoPlayerMasterObject.playbackSpeed.observe(this, playbackSpeedObserver)
-
-        //sleepTimerText.text = "Test"
-        //val timerText = sleepTimer.actionView
-        //timerText.text
-
 
     }
 
-    override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        return when (item.itemId) {
-            R.id.audiobook_playback_speed -> {
-                playbackSpeedPicker(requireContext())
-                //println("Play back Clicked")
-                //TODO
-                true
-            }
-            R.id.audiobook_sleep_timer -> {
-                //println("Sleep Timer Clicked")
 
-                if (ExoPlayerMasterObject.sleepTimerText.value.isNullOrEmpty()) {
-                    sleepTimerNumberPicker(requireContext())
-                } else {
-                    cancelOrPauseSleepTimer(requireContext())
-                    Timber.i("Sleep Timer Running")
-                }
-                //SleepTimerOptions.SleepTimerOptionsListener{}
-                //val sleepTimerOptions = SleepTimerOptions()
-
-                //sleepTimerOptions.listener.onDialogPositiveClick()
-                //sleepTimerOptions.show(parentFragmentManager, "sleep_timer")
-
-                //TimePickerFragment().show(parentFragmentManager, "timePicker")
-                //ExoPlayerMasterObject.startSleepTimer(10000)
-                //TODO
-                true
-            }
-            R.id.audiobook_player_to_app_settings -> {
-                findNavController().navigate(R.id.action_audiobookPlayerFragment_to_globalSettingsFragment)
-                true
-            }
-            //TODO
-//            R.id.replace_album_cover -> {
+//    override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
+//        inflater.inflate(R.menu.audiobook_player_menu, menu)
+//        super.onCreateOptionsMenu(menu, inflater)
+//
+//        val sleepTimer = menu.findItem(R.id.audiobook_sleep_timer)
+//        val sleepTimerActionView = sleepTimer.actionView
+//
+//        sleepTimerTextView = sleepTimerActionView.findViewById<TextView>(R.id.sleep_timer_text)
+//        sleepTimerActionView.setOnClickListener { onOptionsItemSelected(sleepTimer) }
+//        val timerObserver = Observer<String> { timeRemaining ->
+//            sleepTimerTextView.text = timeRemaining
+//        }
+//        ExoPlayerMasterObject.sleepTimerText.observe(this, timerObserver)
+//
+//        val playbackSpeed = menu.findItem(R.id.audiobook_playback_speed)
+//        //playbackSpeed.title = "2.0x"
+//        val playbackSpeedActionView = playbackSpeed.actionView
+//
+//        //val playbackSpeedTextView = playbackSpeedActionView.findViewById<TextView>(R.id.playback_speed_text)
+//        //playbackSpeedActionView.setOnClickListener { onOptionsItemSelected(playbackSpeed) }
+//        val playbackSpeedObserver = Observer<String> { exoPlayerPlaybackSpeed ->
+//            playbackSpeed.title = exoPlayerPlaybackSpeed
+//        }
+//        ExoPlayerMasterObject.playbackSpeed.observe(this, playbackSpeedObserver)
+//
+//        //sleepTimerText.text = "Test"
+//        //val timerText = sleepTimer.actionView
+//        //timerText.text
+//
+//        val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
+//        val firstAudiobookLoad = sharedPreferences.getBoolean("first_audiobook_load", true)
+//        if (firstAudiobookLoad) {
+//            Handler().post(object : Runnable {
+//                override fun run() {
+//                    try {
+//                        TapTargetSequence(activity).targets(
+//                            TapTarget.forView(
+//                                activity?.findViewById<ActionMenuItemView>(R.id.audiobook_playback_speed),
+//                                "Change playback speed",
+//                                "The default speed can also be changed in the app settings"
+//                            ),
+//                            TapTarget.forView(
+//                                activity?.findViewById<FrameLayout>(R.id.audiobook_sleep_timer),
+//                                "Set a sleep timer",
+//                                "Your book will automatically pause at the end of the timer"
+//                            )
+//                        ).start()
+//                    } catch (e: Exception) {
+//                        Timber.e(e)
+//                    }
+//                }
+//            })
+//            sharedPreferences.edit().putBoolean("first_audiobook_load", false).apply()
+//        }
+//    }
+//
+//    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+//        return when (item.itemId) {
+//            R.id.audiobook_playback_speed -> {
+//                playbackSpeedPicker(requireContext())
+//                //println("Play back Clicked")
 //                //TODO
 //                true
 //            }
-            else -> return super.onOptionsItemSelected(item)
-        }
-
-    }
+//            R.id.audiobook_sleep_timer -> {
+//                //println("Sleep Timer Clicked")
+//
+//                if (ExoPlayerMasterObject.sleepTimerText.value.isNullOrEmpty()) {
+//                    sleepTimerNumberPicker(requireContext())
+//                } else {
+//                    cancelOrPauseSleepTimer(requireContext())
+//                    Timber.i("Sleep Timer Running")
+//                }
+//                //SleepTimerOptions.SleepTimerOptionsListener{}
+//                //val sleepTimerOptions = SleepTimerOptions()
+//
+//                //sleepTimerOptions.listener.onDialogPositiveClick()
+//                //sleepTimerOptions.show(parentFragmentManager, "sleep_timer")
+//
+//                //TimePickerFragment().show(parentFragmentManager, "timePicker")
+//                //ExoPlayerMasterObject.startSleepTimer(10000)
+//                //TODO
+//                true
+//            }
+//            R.id.audiobook_player_to_app_settings -> {
+//                findNavController().navigate(R.id.action_audiobookPlayerFragment_to_globalSettingsFragment)
+//                true
+//            }
+//            //TODO
+////            R.id.replace_album_cover -> {
+////                //TODO
+////                true
+////            }
+//            else -> return super.onOptionsItemSelected(item)
+//        }
+//
+//    }
 
 
     fun sleepTimerNumberPicker(context: Context) {
@@ -234,7 +334,7 @@ class AudiobookPlayerFragment : Fragment(R.layout.audiobook_player_fragment) {
         textView.gravity = TextView.TEXT_ALIGNMENT_GRAVITY
         textView.setTextSize(24F)
 
-        ExoPlayerMasterObject.sleepTimerText.observe(this, timerObserver)
+        ExoPlayerMasterObject.sleepTimerText.observe(viewLifecycleOwner, timerObserver)
 
         builder.setMessage("Time remaining: ")
         builder.setTitle("Sleep Timer")

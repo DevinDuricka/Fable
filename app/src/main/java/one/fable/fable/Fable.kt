@@ -34,6 +34,7 @@ class Fable : Application() {
         audiobookDao = FableDatabase.getInstance(applicationContext).audiobookDao
         directoryDao = FableDatabase.getInstance(applicationContext).directoryDao
 
+        ExoPlayerMasterObject.applicationContext = applicationContext
         ExoPlayerMasterObject.buildExoPlayer(applicationContext)
         ExoPlayerMasterObject.setSharedPreferencesAndListener(PreferenceManager.getDefaultSharedPreferences(applicationContext))
         ExoPlayerMasterObject.audiobookDao = audiobookDao

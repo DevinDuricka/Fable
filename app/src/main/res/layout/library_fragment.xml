@@ -11,45 +11,70 @@
 <!--        android:layout_height="match_parent"-->
 <!--        android:id="@+id/swipe_refresh_layout_library">-->
 
-    <LinearLayout
+    <androidx.coordinatorlayout.widget.CoordinatorLayout
+        android:id="@+id/libraryCoordinatorLayout"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:orientation="vertical">
+        android:layout_height="match_parent">
 
-        <com.google.android.material.tabs.TabLayout
-            android:id="@+id/tab_layout_library"
-            style="@style/Widget.MaterialComponents.TabLayout"
+<!--        <androidx.appcompat.widget.LinearLayoutCompat-->
+<!--            android:layout_width="match_parent"-->
+<!--            android:layout_height="match_parent"-->
+<!--            android:orientation="vertical">-->
+
+        <com.google.android.material.appbar.AppBarLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            app:tabIconTint="@color/tab_selector"
-            app:tabIndicatorColor="@color/colorAccent"
-            app:tabTextColor="@color/tab_selector">
+            android:elevation="8dp">
 
-            <com.google.android.material.tabs.TabItem
-                android:id="@+id/tab_item_library_in_progress"
-                android:layout_width="0dp"
+            <com.google.android.material.appbar.MaterialToolbar
+                android:id="@+id/libraryAppBar"
+                style="@style/Widget.MaterialComponents.Toolbar.Surface"
+                android:layout_width="match_parent"
+                android:layout_height="?attr/actionBarSize"
+                app:layout_scrollFlags="scroll"
+                app:menu="@menu/library_menu"
+                app:title="Fable" />
+
+            <com.google.android.material.tabs.TabLayout
+                android:id="@+id/tab_layout_library"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="In Progress" />
+                style="@style/Widget.MaterialComponents.TabLayout"
+                app:tabGravity="center"
+                app:tabIconTint="@color/tab_selector"
+                app:tabIndicatorColor="@color/colorAccent"
+                app:tabTextColor="@color/tab_selector">
 
-            <com.google.android.material.tabs.TabItem
-                android:id="@+id/tab_item_library_not_started"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:text="Not Started" />
+                <com.google.android.material.tabs.TabItem
+                    android:id="@+id/tab_item_library_in_progress"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:text="In Progress" />
 
-            <com.google.android.material.tabs.TabItem
-                android:id="@+id/tab_item_library_finished"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:text="Finished" />
+                <com.google.android.material.tabs.TabItem
+                    android:id="@+id/tab_item_library_not_started"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:text="Not Started" />
+
+                <com.google.android.material.tabs.TabItem
+                    android:id="@+id/tab_item_library_finished"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:text="Finished" />
 
 
-        </com.google.android.material.tabs.TabLayout>
+            </com.google.android.material.tabs.TabLayout>
+        </com.google.android.material.appbar.AppBarLayout>
+
+
+
         <androidx.viewpager2.widget.ViewPager2
             android:id="@+id/view_pager_library"
             android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="1">
+            android:layout_height="match_parent"
+            android:clipToPadding="false"
+            app:layout_behavior="com.google.android.material.appbar.AppBarLayout$ScrollingViewBehavior">
 
         </androidx.viewpager2.widget.ViewPager2>
 
@@ -57,10 +82,13 @@
             android:id="@+id/library_exoplayer"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            app:controller_layout_id="@layout/library_fragment_player"/>
+            android:elevation="8dp"
+            android:background="?attr/colorSurface"
+            app:layout_behavior="com.google.android.material.bottomsheet.BottomSheetBehavior"
+            app:controller_layout_id="@layout/library_fragment_player" />
 
-
-    </LinearLayout>
+<!--        </androidx.appcompat.widget.LinearLayoutCompat>-->
+    </androidx.coordinatorlayout.widget.CoordinatorLayout>
 
 
 <!--    </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>-->

@@ -24,7 +24,7 @@ interface AudiobookDao {
 
     @Query("select * from audiobook where progressState = $PROGRESS_IN_PROGRESS AND canReadParentDirectory = 1 LIMIT 1")
     fun getAnyInProgressAudiobooks(): Audiobook?
-
+    
     @Query("select * from audiobook where progressState = $PROGRESS_FINISHED AND canReadParentDirectory = 1 order by lastPlayedTimestamp DESC")
     fun getFinishedAudiobooks(): LiveData<List<Audiobook>>
 
@@ -54,11 +54,20 @@ interface AudiobookDao {
     @Query("select * from tracks where trackUri = :uri")
     fun getTrack(uri: Uri) : Track?
 
+    @Query("select * from tracks where documentID = :documentID")
+    fun getTrack(documentID: String) : Track?
+
+    @Query("select * from book_cover where uri = :uri")
+    fun getBookCover(uri: Uri) : BookCover?
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun insertAudiobook(audiobook: Audiobook)
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun insertTrack(track: Track)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    fun insertBookCover(cover: BookCover)
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun insertChapter(chapter: Chapter)

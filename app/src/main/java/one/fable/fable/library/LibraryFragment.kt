@@ -2,11 +2,12 @@ package one.fable.fable.library
 
 import android.app.Activity
 import android.content.Intent
+import android.content.SharedPreferences
 import android.os.Bundle
+import android.os.Handler
 import android.view.*
-import android.widget.ImageView
-import android.widget.ProgressBar
-import android.widget.TextView
+import android.widget.*
+import androidx.appcompat.view.menu.ActionMenuItemView
 import androidx.appcompat.widget.SearchView
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.fragment.app.Fragment
@@ -15,8 +16,12 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.fragment.findNavController
+import androidx.preference.PreferenceManager
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import androidx.viewpager2.adapter.FragmentStateAdapter
+import com.getkeepsafe.taptargetview.TapTarget
+import com.getkeepsafe.taptargetview.TapTargetView
+import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.tabs.TabLayoutMediator
 import one.fable.fable.MainActivity
 
@@ -30,7 +35,7 @@ import one.fable.fable.databinding.LibraryTabFragmentBinding
 import one.fable.fable.exoplayer.ExoPlayerMasterObject
 import one.fable.fable.millisToHoursMinutesSecondsString
 import timber.log.Timber
-import java.lang.Exception
+import kotlin.Exception
 
 val libraryTabText = arrayOf(
     R.string.not_started,
@@ -47,7 +52,7 @@ class LibraryFragment : Fragment(R.layout.library_fragment) {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         postponeEnterTransition()
         super.onViewCreated(view, savedInstanceState)
-        setHasOptionsMenu(true)
+        //setHasOptionsMenu(true)
         binding = LibraryFragmentBinding.bind(view)
         binding.setLifecycleOwner(this)
         libraryFragmentViewModel = ViewModelProvider(requireActivity()).get(LibraryFragmentViewModel::class.java)
@@ -76,7 +81,11 @@ class LibraryFragment : Fragment(R.layout.library_fragment) {
         binding.libraryExoplayer.showTimeoutMs = -1
 
         if (ExoPlayerMasterObject.isAudiobookInitialized()){
+            //BottomSheetBehavior.from(binding.libraryExoplayer).state = BottomSheetBehavior.STATE_EXPANDED
             binding.libraryExoplayer.visibility = View.VISIBLE
+            //https://stackoverflow.com/questions/9685658/add-padding-on-view-programmatically
+            val scale = resources.displayMetrics.density
+            binding.viewPagerLibrary.setPadding(0,0,0, (90*scale + 0.5F).toInt())
 
             val clickableArea = binding.libraryExoplayer.findViewById<ConstraintLayout>(R.id.library_bottom_audiobook_player_clickable_area)
             clickableArea.setOnClickListener { findNavController().navigate(R.id.action_libraryFragment_to_audiobookPlayerFragment) }
@@ -96,16 +105,9 @@ class LibraryFragment : Fragment(R.layout.library_fragment) {
                 cover.visibility = View.GONE
             }
 
-            val progressObserver = Observer<Long> {
-                binding.libraryExoplayer.findViewById<ProgressBar>(R.id.library_item_progressbar_top).max = ExoPlayerMasterObject.audiobook.duration.toInt()
-                binding.libraryExoplayer.findViewById<ProgressBar>(R.id.library_item_progressbar_top).progress = it.toInt()
-
-                binding.libraryExoplayer.findViewById<TextView>(R.id.library_bottom_duration).text =
-                    it.millisToHoursMinutesSecondsString() + "/" +ExoPlayerMasterObject.audiobook.duration.millisToHoursMinutesSecondsString()
-            }
-            ExoPlayerMasterObject.progress.observe(viewLifecycleOwner, progressObserver)
-
         } else {
+            //BottomSheetBehavior.from(binding.libraryExoplayer).state = BottomSheetBehavior.STATE_HIDDEN
+
             binding.libraryExoplayer.visibility = View.GONE
         }
 
@@ -120,11 +122,69 @@ class LibraryFragment : Fragment(R.layout.library_fragment) {
             libraryFragmentViewModel.firstLoad = false
         }
 
+        binding.libraryAppBar.setOnMenuItemClickListener { item: MenuItem? ->
+            when (item?.itemId){
+                R.id.library_add_audiobook_directory ->{
+                    addDirectory()
+                    true
+                }
+                R.id.library_settings -> {
+                    findNavController().navigate(R.id.action_libraryFragment_to_globalSettingsFragment)
+                    true
+                }
+                else -> false
+            }
+        }
+
+        val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
+        val firstLibraryLoad = sharedPreferences.getBoolean("first_library_load", true)
+        if (firstLibraryLoad) {
+            try {
+                TapTargetView.showFor(
+                    activity,
+                    TapTarget.forView(
+                        requireActivity().findViewById<ActionMenuItemView>(R.id.library_add_audiobook_directory),
+                        "Add audiobook folder",
+                        "New books will automatically be added to your library as you add them to the folder"
+                    )
+                )
+            } catch (e: Exception) {
+                Timber.e(e)
+            }
+            sharedPreferences.edit().putBoolean("first_library_load", false).apply()
+        }
+
         view.doOnPreDraw { startPostponedEnterTransition() }
+
+
     }
 
     override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
         inflater.inflate(R.menu.library_menu, menu)
+
+        val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
+        val firstLibraryLoad = sharedPreferences.getBoolean("first_library_load", true)
+        if (firstLibraryLoad) {
+            Handler().post(object : Runnable {
+                override fun run() {
+                    try {
+                        TapTargetView.showFor(
+                            activity,
+                            TapTarget.forView(
+                                activity?.findViewById<ActionMenuItemView>(R.id.library_add_audiobook_directory),
+                                "Add audiobook folder", "New books will automatically be added to your library as you add them to the folder"
+                            )
+                        )
+                    } catch (e: Exception) {
+                        Timber.e(e)
+                    }
+                }
+            })
+            sharedPreferences.edit().putBoolean("first_library_load", false).apply()
+        }
+
+
+
 
         //TODO: Add search functionality
 
@@ -158,6 +218,7 @@ class LibraryFragment : Fragment(R.layout.library_fragment) {
 //        })
 
         super.onCreateOptionsMenu(menu, inflater)
+
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {

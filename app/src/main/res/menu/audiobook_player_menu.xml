@@ -2,9 +2,11 @@
 <menu xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:android="http://schemas.android.com/apk/res/android">
 
+
+<!--    https://stablekernel.com/article/using-custom-views-as-menu-items/-->
     <item
         android:id="@+id/audiobook_playback_speed"
-        android:title="Playback Speed"
+        android:title="1.0x"
         android:actionLayout="@layout/audioplayer_menu_playback_speed_icon_with_text"
         app:showAsAction="always"/>
     <item

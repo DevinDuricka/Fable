@@ -7,6 +7,7 @@ import android.os.CountDownTimer
 import android.os.Handler
 import android.util.Log
 import android.util.Xml
+import android.widget.Toast
 import androidx.lifecycle.MutableLiveData
 import com.google.android.exoplayer2.*
 import com.google.android.exoplayer2.Player.TIMELINE_CHANGE_REASON_PREPARED
@@ -15,6 +16,7 @@ import com.google.android.exoplayer2.source.ConcatenatingMediaSource
 import com.google.android.exoplayer2.source.ProgressiveMediaSource
 import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory
 import com.google.android.exoplayer2.util.Util
+import com.google.android.material.snackbar.Snackbar
 import kotlinx.coroutines.*
 import one.fable.fable.convertOverDriveTimeMarkersToMillisecondsAsLong
 import one.fable.fable.database.daos.AudiobookDao
@@ -36,6 +38,8 @@ Building feature-rich media apps with ExoPlayer (Google I/O '18) https://www.you
 
 object ExoPlayerMasterObject {
 
+    lateinit var applicationContext: Context
+
     lateinit var audiobookDao: AudiobookDao
 
     val audioPlaybackWindows = mutableListOf<AudioPlaybackWindow>()
@@ -54,18 +58,9 @@ object ExoPlayerMasterObject {
 
     val windowDurationsSummation = mutableListOf<Long>()
 
-    val sleepTimerText = MutableLiveData<String>()
-    val sleepTimerTimeLeftLong = MutableLiveData<Long>()
-    val sleepTimerPaused = MutableLiveData<Boolean>()
-    var sleepTimerPausedBoolean = false
-
-    val playbackSpeed = MutableLiveData<String>()
-    val playbackSpeedAsInt = MutableLiveData<Int>()
-    val globalPlaybackSpeed = MutableLiveData<Int>()
-    val audiobookPlaybackSpeed = MutableLiveData<Int>()
+    private var loadBookJob : Job? = null
 
     lateinit var sharedPreferences: SharedPreferences
-
     val settingChangeEventListener = SharedPreferences.OnSharedPreferenceChangeListener{ sharedPreferences: SharedPreferences?, key: String? ->
         if (key == "playback_speed_seekbar"){
             globalPlaybackSpeed.value = sharedPreferences?.getInt(key, 10)
@@ -77,7 +72,6 @@ object ExoPlayerMasterObject {
         }
     }
 
-
     lateinit var exoPlayer : SimpleExoPlayer
     fun isExoPlayerInitialized() = this::exoPlayer.isInitialized //https://stackoverflow.com/questions/47549015/isinitialized-backing-field-of-lateinit-var-is-not-accessible-at-this-point
     fun buildExoPlayer(context: Context){
@@ -87,32 +81,71 @@ object ExoPlayerMasterObject {
         }
     }
 
+    fun loadAudiobook(audiobookToLoad: Audiobook){
+        var loadNewBook = false
+        if (!isAudiobookInitialized()){
+            audiobook = audiobookToLoad
+            loadNewBook = true
+        } else {
+            if(audiobook.audiobookId != audiobookToLoad.audiobookId){
+                updateAudiobookObjectLocation()
+                val previousAudiobook = audiobook
+                CoroutineScope(Dispatchers.IO).launch{
+                    updateAudiobook(previousAudiobook)
+                }
+                audiobook = audiobookToLoad
+                loadNewBook = true
+            }
+        }
+
+        //showToastCoroutine("Test Toast", Toast.LENGTH_SHORT)
+
+        if (loadNewBook){
+            touchAndUpdateAudiobook()
+            loadBookJob = Job()
+            CoroutineScope(Dispatchers.Main).launch {
+                loadTracks(audiobookToLoad.audiobookTitle)
+            }
+        }
+    }
+
+
     fun setSharedPreferencesAndListener(preferences: SharedPreferences){
         sharedPreferences = preferences
         sharedPreferences.registerOnSharedPreferenceChangeListener(settingChangeEventListener)
         globalPlaybackSpeed.value = sharedPreferences.getInt("playback_speed_seekbar", 10)
     }
 
-    suspend fun getTracks(title: String, context: Context){
+    suspend fun getTracks(title: String){
         withContext(Dispatchers.IO){
             audiobookTracks = audiobookDao.getAudiobookTracks(title)
-            for (track in audiobookTracks){
-                checkFileForChapterInfo(track.trackUri, context)
-            }
+            val tracks = audiobookTracks
+            checkFileForChapterInfo(tracks)
+
             tracksWithChapters = audiobookDao.getAudiobookTracksWithChapters(title)
         }
     }
 
-    suspend fun loadTracks(context: Context, title :String){
+    fun touchAndUpdateAudiobook(){
+        if(isAudiobookInitialized()){
+            audiobook.lastPlayedTimeStamp = System.currentTimeMillis()
+            CoroutineScope(Dispatchers.IO).launch {
+                updateAudiobook()
+            }
+        }
+    }
+
+    suspend fun loadTracks(title :String){
         Timber.i("Loading new tracks")
 
-        val dataSourceFactory = DefaultDataSourceFactory(context,
-                Util.getUserAgent(context, "Fable"))
-
+        val dataSourceFactory = DefaultDataSourceFactory(applicationContext,
+                Util.getUserAgent(applicationContext, "Fable"))
         val concatenatingMediaSource = ConcatenatingMediaSource()
 
 
-        runBlocking { getTracks(title, context) }
+        withContext(Dispatchers.IO){
+            getTracks(title)
+        }
 //        CoroutineScope(Dispatchers.IO).launch {
 //
 //        }
@@ -168,6 +201,7 @@ object ExoPlayerMasterObject {
         }
 
         exoPlayer.prepare(concatenatingMediaSource)
+
         exoPlayer.playWhenReady = false
 
         //var index = 0
@@ -201,74 +235,76 @@ object ExoPlayerMasterObject {
 
     }
 
-    suspend fun checkFileForChapterInfo(uri: Uri, context: Context) {
-        var track = audiobookDao.getTrack(uri) ?: return
-
-        if (track.validSource.isNotEmpty()) {return}
-
-        if (!track.scannedSourceNames.contains("OverDrive")) {
-            withContext(Dispatchers.IO) {
-
-                val contentResolver = context.contentResolver
-                var inputStream = contentResolver.openInputStream(uri)
-                val bufferedReader = BufferedReader(InputStreamReader(inputStream))
-                var line = ""
-                val iterator = bufferedReader.lineSequence().iterator()
-                var iteratorCounter = 0
-
-                while (iterator.hasNext() && iteratorCounter <= 500 && line.isBlank()) {
-                    val fileLine = iterator.next()
-                    if (fileLine.contains("OverDrive MediaMarkers")) {
-                        line = fileLine
-                    }
-                    iteratorCounter.inc()
+    suspend fun checkFileForChapterInfo(tracks: List<Track>) {
+        val scanTracks = Job()
+        withContext(Dispatchers.IO + scanTracks) {
+            track@ for (track in tracks) {
+                if (track.validSource.isNotEmpty()) {
+                    continue@track
                 }
-                bufferedReader.close()
 
-                if (line.isNotBlank()) {
-                    //var line = bufferedReader.readLine()
-                    var markers = listOf<Marker>()
+                if (!track.scannedSourceNames.contains("OverDrive")) {
 
-                    line = line.filter { !it.isIdentifierIgnorable() || !it.isISOControl() }
+                    val contentResolver = applicationContext.contentResolver
 
-                    //For some reason, the first filter isn't removing some of the special chars.
-                    //This will remove the rest of the unknown ones.
-                    line = line.replace("\\uFFFD".toRegex(), "")
+                    var inputStream = contentResolver.openInputStream(track.trackUri)
+                    val bufferedReader = BufferedReader(InputStreamReader(inputStream))
+                    var line = ""
+                    val iterator = bufferedReader.lineSequence().iterator()
+                    var iteratorCounter = 0
 
-                    //This doesn't seem to work. I'm still seeing these chars in the line.
-                    //Luckily, I don't think this is part of the string we actually are going to use.
-                    line = line.replace("\\u001D".toRegex(), "")
-
-                    //Log.i("AudiobookPlayerVMTracks", line)
-
-                    val chaptersXML = line.substringAfter("<Markers>").substringBefore("</Markers>")
-                    //Log.i("AudiobookPlayerVMTracks", chaptersXML)
-
-                    if (chaptersXML != line) {
-                        markers = getOverDriveMediaMarkers(chaptersXML)
+                    while (iterator.hasNext() && iteratorCounter <= 500 && line.isBlank()) {
+                        val fileLine = iterator.next()
+                            if (fileLine.contains("OverDrive MediaMarkers")) {
+                                line = fileLine
+                            }
+                        iteratorCounter += 1
                     }
+                    bufferedReader.close()
 
-                    if (markers.isNotEmpty()) {
-                        for (marker in markers) {
-                            audiobookDao.insertChapter(
-                                Chapter(
-                                    trackUri = uri,
-                                    chapterName = marker.Name,
-                                    chapterPositionMs = marker.Time
-                                )
-                            )
+                    if (line.isNotBlank()) {
+                        var markers = listOf<Marker>()
+
+                        line = line.filter { !it.isIdentifierIgnorable() || !it.isISOControl() }
+
+                        //For some reason, the first filter isn't removing some of the special chars.
+                        //This will remove the rest of the unknown ones.
+                        line = line.replace("\\uFFFD".toRegex(), "")
+
+                        //This doesn't seem to work. I'm still seeing these chars in the line.
+                        //Luckily, I don't think this is part of the string we actually are going to use.
+                        line = line.replace("\\u001D".toRegex(), "")
+
+                        //Log.i("AudiobookPlayerVMTracks", line)
+
+                        val chaptersXML =
+                                line.substringAfter("<Markers>").substringBefore("</Markers>")
+                        //Log.i("AudiobookPlayerVMTracks", chaptersXML)
+
+                        if (chaptersXML != line) {
+                            markers = getOverDriveMediaMarkers(chaptersXML)
                         }
-                        track.validSource = "OverDrive"
+
+                        if (markers.isNotEmpty()) {
+                            for (marker in markers) {
+                                audiobookDao.insertChapter(
+                                    Chapter(
+                                        trackUri = track.trackUri,
+                                        chapterName = marker.Name,
+                                        chapterPositionMs = marker.Time
+                                    )
+                                )
+                            }
+                            track.validSource = "OverDrive"
+                        }
                     }
+
+                    //track.hasBeenScanned = true
+                    track.scannedSourceNames += "OverDrive "
+                    audiobookDao.updateTrack(track)
                 }
-
-                //track.hasBeenScanned = true
-                track.scannedSourceNames += "OverDrive "
-                audiobookDao.updateTrack(track)
             }
-
         }
-
     }
 
     fun getOverDriveMediaMarkers(xmlString: String) : List<Marker>{
@@ -306,63 +342,6 @@ object ExoPlayerMasterObject {
         return markers
     }
 
-    fun selectTrack(track : Int){
-        if (track != exoPlayer.currentWindowIndex){
-            exoPlayer.seekTo(track, 0)
-            //progress.value = getTimelineDuration()
-        }
-    }
-
-    fun customFastForward(fastforwardAmount: Long){
-        val currentPosition = exoPlayer.currentPosition
-        val windowLength = exoPlayer.duration
-        var windowIndex = exoPlayer.currentWindowIndex
-        val trackRemainder = windowLength - currentPosition
-
-        if (fastforwardAmount < trackRemainder){
-            exoPlayer.seekTo(currentPosition + fastforwardAmount)
-        } else {
-            exoPlayer.seekTo(windowIndex + 1, fastforwardAmount - trackRemainder)
-            //todo implement the same "while" loop we have in the customRewind.
-            // It isn't guaranteed that the next window will have enough remaining time,
-            // so we may have to continue seeking tracks
-        }
-    }
-
-    fun customRewind(rewindAmount: Long){
-        val currentPosition = exoPlayer.currentPosition //Position (time) in current window/period
-        //val trackLength = exoPlayer.duration //Length of the window/period
-        var windowIndex = exoPlayer.currentWindowIndex
-
-        if (currentPosition > rewindAmount) {
-            exoPlayer.seekTo(currentPosition - rewindAmount)
-        } else {
-            //If it's the first track, go to the start of the track
-            if (windowIndex == 0){
-                exoPlayer.seekToDefaultPosition()
-                return
-            }
-
-            //If the
-            var deficit = currentPosition - rewindAmount
-            var previousWindowDuration = 0L
-            var seekToWindowIndex : Int = exoPlayer.currentWindowIndex
-
-            while (deficit < 0L && seekToWindowIndex > 0){
-                seekToWindowIndex = seekToWindowIndex.dec()
-                var seekWindow = Timeline.Window()
-                exoPlayer.currentTimeline.getWindow(seekToWindowIndex, seekWindow)
-                previousWindowDuration = seekWindow.durationMs
-                deficit += previousWindowDuration
-            }
-
-            if (seekToWindowIndex == 0 && deficit < 0L){
-                exoPlayer.seekTo(seekToWindowIndex, 0L)
-            } else {
-                exoPlayer.seekTo(seekToWindowIndex, deficit)
-            }
-        }
-    }
 
     //PROGRESS TRACKER CODE todo
     val progressTrackerHandler = Handler()
@@ -373,33 +352,10 @@ object ExoPlayerMasterObject {
         }
     }
 
-    fun updateAudiobookObjectLocation(){
-        audiobook.windowIndex = exoPlayer.currentWindowIndex
-        audiobook.windowLocation = exoPlayer.currentPosition
-        audiobook.timelineDuration = getTimelineDuration()
-        progress.value = audiobook.timelineDuration
-        audiobook.lastPlayedTimeStamp = System.currentTimeMillis()
-        if (exoPlayer.currentWindowIndex == exoPlayer.currentTimeline.windowCount - 1){
-            audiobook.progressState = PROGRESS_FINISHED
-        } else {
-            audiobook.progressState = PROGRESS_IN_PROGRESS
-        }
-    }
-
     fun getTimelineDuration() : Long{
         var timelineDuration = try {windowDurationsSummation[exoPlayer.currentWindowIndex -1]}
             catch(e: IndexOutOfBoundsException){0L}
         timelineDuration += exoPlayer.currentPosition
-//        var index = 0
-//        Timber.i("Current Window Index: " + exoPlayer.currentWindowIndex)
-//        while(index < exoPlayer.currentWindowIndex){
-//            var window = Timeline.Window()
-//            exoPlayer.currentTimeline.getWindow(index, window)
-//            timelineDuration += window.durationMs
-//            index++
-//        }
-//        timelineDuration += exoPlayer.currentPosition
-
         return timelineDuration
     }
 
@@ -500,9 +456,149 @@ object ExoPlayerMasterObject {
     }
 
 
-    //fun preventNegative
+    fun updateAudiobookObjectLocation(){
+        audiobook.windowIndex = exoPlayer.currentWindowIndex
+        audiobook.windowLocation = exoPlayer.currentPosition
+        audiobook.timelineDuration = getTimelineDuration()
+        progress.value = audiobook.timelineDuration
+        audiobook.lastPlayedTimeStamp = System.currentTimeMillis()
 
+        if (audiobook.duration > 0L) {
+            if (exoPlayer.currentWindowIndex == exoPlayer.currentTimeline.windowCount - 1 && (audiobook.timelineDuration.toDouble() / audiobook.duration.toDouble()) >= 0.95){
+                audiobook.progressState = PROGRESS_FINISHED
+            } else {
+                audiobook.progressState = PROGRESS_IN_PROGRESS
+            }
+        }
+
+//        if (exoPlayer.currentWindowIndex == exoPlayer.currentTimeline.windowCount - 1){
+//            audiobook.progressState = PROGRESS_FINISHED
+//        } else {
+//            audiobook.progressState = PROGRESS_IN_PROGRESS
+//        }
+    }
+
+    suspend fun updateAudiobook(){
+        withContext(Dispatchers.IO){
+            audiobook?.let { audiobookDao.updateAudiobook(it) }
+        }
+    }
+
+    suspend fun updateAudiobook(audiobook: Audiobook){
+        withContext(Dispatchers.IO){
+            audiobook.let { audiobookDao.updateAudiobook(it) }
+        }
+    }
+
+
+    /* ExoPlayer Manipulation Functions-------------------------------------------------------------
+
+    */
+    fun selectTrack(track : Int){
+        if (track != exoPlayer.currentWindowIndex){
+            exoPlayer.seekTo(track, 0)
+            //progress.value = getTimelineDuration()
+        }
+    }
+
+    fun customFastForward(fastforwardAmount: Long){
+        val currentPosition = exoPlayer.currentPosition
+        val windowLength = exoPlayer.duration
+        var windowIndex = exoPlayer.currentWindowIndex
+        val trackRemainder = windowLength - currentPosition
+
+        if (fastforwardAmount < trackRemainder){
+            exoPlayer.seekTo(currentPosition + fastforwardAmount)
+        } else {
+            exoPlayer.seekTo(windowIndex + 1, fastforwardAmount - trackRemainder)
+            //todo implement the same "while" loop we have in the customRewind.
+            // It isn't guaranteed that the next window will have enough remaining time,
+            // so we may have to continue seeking tracks
+        }
+    }
+
+    fun customRewind(rewindAmount: Long){
+        val currentPosition = exoPlayer.currentPosition //Position (time) in current window/period
+        //val trackLength = exoPlayer.duration //Length of the window/period
+        var windowIndex = exoPlayer.currentWindowIndex
+
+        if (currentPosition > rewindAmount) {
+            exoPlayer.seekTo(currentPosition - rewindAmount)
+        } else {
+            //If it's the first track, go to the start of the track
+            if (windowIndex == 0){
+                exoPlayer.seekToDefaultPosition()
+                return
+            }
+
+            //If the
+            var deficit = currentPosition - rewindAmount
+            var previousWindowDuration = 0L
+            var seekToWindowIndex : Int = exoPlayer.currentWindowIndex
+
+            while (deficit < 0L && seekToWindowIndex > 0){
+                seekToWindowIndex = seekToWindowIndex.dec()
+                var seekWindow = Timeline.Window()
+                exoPlayer.currentTimeline.getWindow(seekToWindowIndex, seekWindow)
+                previousWindowDuration = seekWindow.durationMs
+                deficit += previousWindowDuration
+            }
+
+            if (seekToWindowIndex == 0 && deficit < 0L){
+                exoPlayer.seekTo(seekToWindowIndex, 0L)
+            } else {
+                exoPlayer.seekTo(seekToWindowIndex, deficit)
+            }
+        }
+    }
+
+
+    /* Playback Speed Functions---------------------------------------------------------------------
+
+    */
+    val playbackSpeed = MutableLiveData<String>()
+    val playbackSpeedAsInt = MutableLiveData<Int>()
+
+    val globalPlaybackSpeed = MutableLiveData<Int>()
+
+    fun setPlaybackSpeed(speedAsInt: Int){
+        val speedAsFloat = speedAsInt / 10.0f
+        val playbackParameters = PlaybackParameters(speedAsFloat)
+        exoPlayer.setPlaybackParameters(playbackParameters)
+        playbackSpeedAsInt.value = speedAsInt
+        playbackSpeed.value = speedAsFloat.toString() + "x"
+    }
+
+    fun convertSpeedIntToString(speedAsInt: Int) : String {
+        val speedAsFloat = speedAsInt / 10.0f
+        return speedAsFloat.toString() + "x"
+    }
+
+    fun resetSpeedToDefault(){
+        globalPlaybackSpeed.value?.let { setPlaybackSpeed(it) }
+        audiobook?.playbackSpeed = null
+        CoroutineScope(Dispatchers.IO).launch{
+            updateAudiobook()
+        }
+    }
+
+    fun updateAudiobookSpeed(speed : Int){
+        audiobook?.playbackSpeed = speed
+        CoroutineScope(Dispatchers.IO).launch{
+            updateAudiobook()
+        }
+    }
+
+
+    /* Sleep Timer Functions------------------------------------------------------------------------
+
+    */
     lateinit var sleepTimer : CountDownTimer
+    val sleepTimerText = MutableLiveData<String>()
+    val sleepTimerTimeLeftLong = MutableLiveData<Long>()
+    val sleepTimerPaused = MutableLiveData<Boolean>()
+    var sleepTimerPausedBoolean = false
+
     //https://stackoverflow.com/questions/9027317/how-to-convert-milliseconds-to-hhmmss-format/9027379
     fun startSleepTimer(length : Long){
         sleepTimer = object : CountDownTimer(length + 100, TimeUnit.SECONDS.toMillis(1)){
@@ -548,42 +644,5 @@ object ExoPlayerMasterObject {
             sleepTimerTimeLeftLong.value = null
         }
     }
-
-    fun setPlaybackSpeed(speedAsInt: Int){
-        val speedAsFloat = speedAsInt / 10.0f
-        val playbackParameters = PlaybackParameters(speedAsFloat)
-        exoPlayer.setPlaybackParameters(playbackParameters)
-        playbackSpeedAsInt.value = speedAsInt
-        playbackSpeed.value = speedAsFloat.toString() + "x"
-    }
-
-    fun convertSpeedIntToString(speedAsInt: Int) : String {
-        val speedAsFloat = speedAsInt / 10.0f
-        return speedAsFloat.toString() + "x"
-    }
-
-    fun resetSpeedToDefault(){
-        globalPlaybackSpeed.value?.let { setPlaybackSpeed(it) }
-        audiobook?.playbackSpeed = null
-        CoroutineScope(Dispatchers.IO).launch{
-            updateAudiobook()
-        }
-    }
-
-    fun updateAudiobookSpeed(speed : Int){
-        audiobook?.playbackSpeed = speed
-        CoroutineScope(Dispatchers.IO).launch{
-            updateAudiobook()
-        }
-    }
-
-    suspend fun updateAudiobook(){
-        withContext(Dispatchers.IO){
-            audiobook?.let { audiobookDao.updateAudiobook(it) }
-        }
-    }
-
-
-
 
 }

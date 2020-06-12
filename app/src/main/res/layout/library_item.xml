@@ -10,24 +10,24 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_margin="4dp"
-        app:cardElevation="2dp">
+        app:cardElevation="6dp">
 
         <androidx.constraintlayout.widget.ConstraintLayout
             android:layout_width="match_parent"
-            android:layout_height="match_parent">
+            android:layout_height="wrap_content">
 
             <androidx.appcompat.widget.AppCompatImageView
                 android:id="@+id/cover_image"
-                android:layout_width="80dp"
-                android:layout_height="0dp"
+                android:layout_width="0dp"
+                android:layout_height="80dp"
                 android:layout_margin="5dp"
                 android:background="@color/darker_grey"
                 android:scaleType="centerCrop"
-                app:srcCompat="@drawable/ic_album"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintDimensionRatio="w,1:1"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintBottom_toTopOf="@id/library_item_progressbar"
+                app:layout_constraintDimensionRatio="w,1:1"
+                app:srcCompat="@drawable/ic_album"
                 tools:src="@drawable/ic_album" />
 
             <TextView
@@ -50,23 +50,28 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_marginHorizontal="10dp"
+                android:layout_marginVertical="4dp"
                 android:ellipsize="end"
                 android:maxLines="1"
-                app:layout_constraintBottom_toBottomOf="@id/cover_image"
-                app:layout_constraintEnd_toStartOf="@id/audiobook_duration"
+                app:layout_constraintBottom_toTopOf="@id/audiobook_duration"
+                app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toEndOf="@id/cover_image"
+                app:layout_constraintTop_toBottomOf="@id/gridItem_Title"
                 tools:text="Author" />
 
             <!--Someday I'll need to add a color palette to the progress bar.
             http://turndapage.com/2018/03/16/getting-colors-like-androids-media-style-notifications/
             https://developer.android.com/training/material/palette-colors-->
+
             <TextView
                 android:id="@+id/audiobook_duration"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginEnd="8dp"
+                android:layout_marginBottom="4dp"
+                app:layout_constraintBottom_toTopOf="@id/library_item_progressbar"
                 app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintBottom_toBottomOf="@id/cover_image"
+                app:layout_constraintTop_toBottomOf="@id/gridItem_Author"
                 tools:text="00:00/00:00" />
 
             <ProgressBar

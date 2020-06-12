@@ -4,16 +4,14 @@ import android.view.LayoutInflater
 import android.view.LayoutInflater.from
 import android.view.View
 import android.view.ViewGroup
+import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.Observer
 import androidx.navigation.findNavController
 import androidx.navigation.fragment.FragmentNavigatorExtras
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.*
 import one.fable.fable.R
 import one.fable.fable.database.entities.Audiobook
 import one.fable.fable.databinding.LibraryItemBinding
@@ -22,7 +20,9 @@ import one.fable.fable.millisToHoursMinutesSecondsString
 import timber.log.Timber
 
 class LibraryFragmentAdapter() : ListAdapter<Audiobook, LibraryItemViewHolder>(LibraryDataDiffCallback()) {
+
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): LibraryItemViewHolder {
+
         return LibraryItemViewHolder.from(parent)
     }
 
@@ -34,31 +34,25 @@ class LibraryFragmentAdapter() : ListAdapter<Audiobook, LibraryItemViewHolder>(L
             Timber.i("4 Progress is:" + it.toString())
             item.duration = it
         }
+
         holder.bind(item)
 
-        if (ExoPlayerMasterObject.isAudiobookInitialized() && item.audiobookId == ExoPlayerMasterObject.audiobook.audiobookId){
-            holder.itemView.visibility = View.GONE
-            holder.itemView.layoutParams = RecyclerView.LayoutParams(0,0)
-        } else {
-            holder.itemView.visibility = View.VISIBLE
-            //holder.itemView.layoutParams = RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
-        }
+//        if (ExoPlayerMasterObject.isAudiobookInitialized() && item.audiobookId == ExoPlayerMasterObject.audiobook.audiobookId){
+//            holder.itemView.visibility = View.GONE
+//            holder.itemView.layoutParams = RecyclerView.LayoutParams(0,0)
+//        } else {
+//            holder.itemView.visibility = View.VISIBLE
+//            //holder.itemView.layoutParams = RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+//        }
 
-        holder.binding.lifecycleOwner?.let { ExoPlayerMasterObject.progress.observe(it, progressObserver) }
+        //holder.binding.lifecycleOwner?.let { ExoPlayerMasterObject.progress.observe(it, progressObserver) }
     }
 }
 
-class LibraryItemViewHolder private constructor(val binding: LibraryItemBinding) : RecyclerView.ViewHolder(binding.root) {
+class LibraryItemViewHolder private constructor(val binding: LibraryItemBinding) : RecyclerView.ViewHolder(binding.root){
+    object libraryItemListener : LibraryItemListener
+
     public fun bind(item: Audiobook){
-
-//        if (ExoPlayerMasterObject.isAudiobookInitialized() && item.audiobookId == ExoPlayerMasterObject.audiobook.audiobookId){
-//            binding.root.visibility = View.GONE
-//        } else {
-//            binding.root.visibility = View.VISIBLE
-//        }
-
-        binding
-
         binding.gridItemTitle.text = item.audiobookTitle
         binding.gridItemAuthor.text = item.audiobookAuthor
         if (item.imgThumbnail != null){
@@ -83,9 +77,9 @@ class LibraryItemViewHolder private constructor(val binding: LibraryItemBinding)
                 binding.libraryItemProgressbar.progress = it.toInt()
             }
 
-            binding.root.parent
-            binding.lifecycleOwner?.let { ExoPlayerMasterObject.progress.observe(it, progressObserver) }
-            //chapterName.observe(viewLifecycleOwner, chapterNameObserver)
+            //https://stackoverflow.com/questions/54825613/how-to-use-livedata-and-viewmodel-with-a-viewholder-as-lifecycle-owner
+            ExoPlayerMasterObject.progress.observe((binding.root.context as LifecycleOwner), progressObserver)
+
         } else {
             binding.audiobookDuration.text =
                 item.timelineDuration.millisToHoursMinutesSecondsString() + "/" + item.duration.millisToHoursMinutesSecondsString()
@@ -100,29 +94,9 @@ class LibraryItemViewHolder private constructor(val binding: LibraryItemBinding)
         binding.libraryItemProgressbar.transitionName = item.audiobookTitle + "progressbar"
 
         binding.root.setOnClickListener {
-            binding.progressCircularLibraryItemLoadingBook.visibility = View.VISIBLE
-            //todo: assigning the audiobook is probably hacky. We should add a loading animation and checks, etc.
-            var loadNewBook = false
+            ExoPlayerMasterObject.loadAudiobook(item)
+            //ExoPlayerMasterObject.audiobook = item
 
-            if (!ExoPlayerMasterObject.isAudiobookInitialized()){
-                ExoPlayerMasterObject.audiobook = item
-                loadNewBook = true
-            } else if (ExoPlayerMasterObject.audiobook.audiobookId != item.audiobookId){
-                Timber.i("Books should be different")
-                runBlocking {
-                    ExoPlayerMasterObject.updateAudiobookObjectLocation()
-                    ExoPlayerMasterObject.updateAudiobook()
-                }
-                ExoPlayerMasterObject.audiobook = item
-                loadNewBook = true
-            }
-
-            if (loadNewBook){
-                runBlocking {
-                    ExoPlayerMasterObject.loadTracks(binding.root.context, item.audiobookTitle)
-
-                }
-            }
             //https://medium.com/@serbelga/shared-elements-in-android-navigation-architecture-component-bc5e7922ecdf
             val extras = FragmentNavigatorExtras(
                 binding.coverImage to "player_view_cover_image",
@@ -132,12 +106,12 @@ class LibraryItemViewHolder private constructor(val binding: LibraryItemBinding)
                 binding.libraryItemProgressbar to "progressbar"
             )
 
-            binding.root.findNavController().navigate(R.id.action_libraryFragment_to_audiobookPlayerFragment, null, null, extras)
-
-
-
-            //binding.root.findNavController().navigate(LibraryFragmentDirections.actionLibraryFragmentToAudiobookPlayerFragment(item.audiobookTitle, item.audiobookAuthor.toString(), item.imgThumbnail.toString()), extras)
-            binding.progressCircularLibraryItemLoadingBook.visibility = View.GONE
+            binding.root.findNavController().navigate(
+                R.id.action_libraryFragment_to_audiobookPlayerFragment,
+                null,
+                null,
+                extras
+            )
         }
     }
 
@@ -155,6 +129,12 @@ class LibraryItemViewHolder private constructor(val binding: LibraryItemBinding)
             return LibraryItemViewHolder(binding)
 
             //return TextItemViewHolder(view)
+        }
+    }
+
+    interface LibraryItemListener{
+        fun LibraryItemClick(position: Int){
+
         }
     }
 }

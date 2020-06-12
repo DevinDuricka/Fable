@@ -12,6 +12,9 @@ data class Track(
     @PrimaryKey
     val trackUri: Uri,
 
+    //This is the track ID that is generated from the Documents Contract
+    val documentID : String,
+
     val audiobookTitle: String,
 
     //val chapterOrder : Int,

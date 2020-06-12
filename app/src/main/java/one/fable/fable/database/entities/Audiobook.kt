@@ -47,6 +47,16 @@ data class AudiobookWithTracks(
     val tracks: List<Track>
 )
 
+data class AudiobookWithAlbumArt(
+    @Embedded val audiobook: Audiobook,
+    @Relation(
+        parentColumn = "imgThumbnail",
+        entityColumn = "uri"
+    )
+    val cover: BookCover
+
+)
+
 data class albumImage(
     val uri: Uri,
     val size : Long

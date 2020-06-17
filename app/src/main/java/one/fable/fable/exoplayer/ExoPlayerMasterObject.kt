@@ -428,7 +428,7 @@ object ExoPlayerMasterObject {
                     duration = window.getDurationUs() / 1000
                     //TODO: Someday when the fix gets pushed to a release, get rid of this
                     //https://github.com/google/ExoPlayer/issues/7314
-                    if (duration < 0){
+                    if (duration <= 0){
                         val outsideCalculatedDuration = audioPlaybackWindows[index].duration
                         if (outsideCalculatedDuration != null){
                             duration = outsideCalculatedDuration
@@ -437,6 +437,12 @@ object ExoPlayerMasterObject {
                             timeline.getPeriod(window.firstPeriodIndex, period)
 
                             duration = period.durationMs - audioPlaybackWindows[index].startPos
+                        }
+                        if (duration < 0){
+                            val trackAtIndexOrNull = audiobookTracks.elementAtOrNull(index)
+                            if (trackAtIndexOrNull != null) {
+                                trackAtIndexOrNull.trackLength?.let { duration = it }
+                            }
                         }
                         if (duration < 0){
                             duration = 0

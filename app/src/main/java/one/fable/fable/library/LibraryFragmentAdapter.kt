@@ -4,6 +4,9 @@ import android.view.LayoutInflater
 import android.view.LayoutInflater.from
 import android.view.View
 import android.view.ViewGroup
+import androidx.appcompat.app.AlertDialog
+import androidx.appcompat.app.AppCompatActivity
+import androidx.fragment.app.DialogFragment
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.Observer
 import androidx.navigation.findNavController
@@ -112,6 +115,14 @@ class LibraryItemViewHolder private constructor(val binding: LibraryItemBinding)
                 null,
                 extras
             )
+        }
+
+        binding.root.setOnLongClickListener {
+            Timber.i("Long Press" + item.audiobookTitle)
+            val bottomSheet = BottomSheetChangeAudiobookProgress(item)
+            val transaction = (binding.root.context as AppCompatActivity).supportFragmentManager.beginTransaction()
+            bottomSheet.show(transaction, "Test")
+            true
         }
     }
 

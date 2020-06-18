@@ -6,4 +6,5 @@
     <string name="in_progress">In Progress</string>
     <string name="not_started">Not Started</string>
     <string name="finished">Finished</string>
+    <string name="change_audiobook_status">"Change book status to"</string>
 </resources>

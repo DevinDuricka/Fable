@@ -54,7 +54,8 @@ class MainActivity : AppCompatActivity() {
         val navHostFragment: NavHostFragment = supportFragmentManager.findFragmentById(R.id.nav_host_fragment) as NavHostFragment
         val inflater = navHostFragment.navController.navInflater
         val graph = inflater.inflate(R.navigation.navigation)
-        graph.startDestination = R.id.libraryFragment
+        graph.setStartDestination(R.id.libraryFragment)
+//        graph.startDestination = R.id.libraryFragment
 
         navController.graph = graph
     }
@@ -206,7 +207,7 @@ class MainActivity : AppCompatActivity() {
                                 if(isLocal(authority)){
                                     val mediaMetadataRetriever = MediaMetadataRetriever()
                                     mediaMetadataRetriever.setDataSource(applicationContext, childUri)
-                                    duration = mediaMetadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION).toLong()
+                                    duration = mediaMetadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)?.toLong()
                                     (mediaMetadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ALBUM))?.let { title = it }
                                     author = mediaMetadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ARTIST)
                                     (mediaMetadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_TITLE))?.let { trackTitle = it }

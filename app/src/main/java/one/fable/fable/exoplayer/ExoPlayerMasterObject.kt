@@ -10,7 +10,7 @@ import android.util.Xml
 import android.widget.Toast
 import androidx.lifecycle.MutableLiveData
 import com.google.android.exoplayer2.*
-import com.google.android.exoplayer2.Player.TIMELINE_CHANGE_REASON_PREPARED
+import com.google.android.exoplayer2.Player.TIMELINE_CHANGE_REASON_PLAYLIST_CHANGED
 import com.google.android.exoplayer2.source.ClippingMediaSource
 import com.google.android.exoplayer2.source.ConcatenatingMediaSource
 import com.google.android.exoplayer2.source.ProgressiveMediaSource
@@ -360,8 +360,8 @@ object ExoPlayerMasterObject {
     }
 
     //PLAYER EVENT LISTENER CODE todo
-    private val eventListener = PlayerEventListener()
-    class PlayerEventListener() : Player.EventListener{
+    private val eventListener = PlayerListener()
+    class PlayerListener : Player.Listener{
         //var isPlayingBool = false
 
         override fun onIsPlayingChanged(isPlaying: Boolean) {
@@ -398,7 +398,7 @@ object ExoPlayerMasterObject {
             if (audioPlaybackWindows.isNotEmpty()) {
                 Timber.i("Position Discontinuity")
                 Timber.i(reason.toString())
-                chapterName.value = audioPlaybackWindows[exoPlayer.currentWindowIndex].Name
+                chapterName.value = audioPlaybackWindows[exoPlayer.currentWindowIndex].Name!!
             }
 //            }
         }
@@ -413,11 +413,11 @@ object ExoPlayerMasterObject {
             //todo
             if (audioPlaybackWindows.isNotEmpty()){
                 Timber.i("Timeline Changed")
-                chapterName.value = audioPlaybackWindows[exoPlayer.currentWindowIndex].Name
+                chapterName.value = audioPlaybackWindows[exoPlayer.currentWindowIndex].Name!!
                 progress.value = getTimelineDuration()
             }
 
-            if (reason == TIMELINE_CHANGE_REASON_PREPARED){
+            if (reason == TIMELINE_CHANGE_REASON_PLAYLIST_CHANGED){
                 windowDurationsSummation.clear()
                 Timber.i("Last Index is: " + exoPlayer.currentTimeline.windowCount)
                 for (index in 0 until timeline.windowCount){
@@ -621,10 +621,10 @@ object ExoPlayerMasterObject {
             }
 
             override fun onFinish() {
-                sleepTimerText.value = null
-                sleepTimerTimeLeftLong.value = null
+                sleepTimerText.value = ""
+                sleepTimerTimeLeftLong.value = -1
                 exoPlayer.playWhenReady = false
-                sleepTimerPaused.value = null
+                sleepTimerPaused.value = false
                 sleepTimerPausedBoolean = false
 
             }
@@ -646,8 +646,8 @@ object ExoPlayerMasterObject {
     fun cancelSleepTimer(){
         if(this::sleepTimer.isInitialized) {
             sleepTimer.cancel()
-            sleepTimerText.value = null
-            sleepTimerTimeLeftLong.value = null
+            sleepTimerText.value = ""
+            sleepTimerTimeLeftLong.value = -1
         }
     }
 

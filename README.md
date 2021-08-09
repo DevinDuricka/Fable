@@ -8,7 +8,7 @@
     height='80'
     src='https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png'/></a>
 
-In my opionon <a href="https://github.com/PaulWoitaschek/Voice">Voice</a> by Paul Woitaschek is one of the best audiobook players for Android and has been my goto for a years (it has my glowing recommendation, so I wont be offended if you use it instead 😉).
+In my opionon <a href="https://github.com/PaulWoitaschek/Voice">Voice</a> by Paul Woitaschek is one of the best audiobook players for Android and has been my go-to for a years (it has my glowing recommendation, so I wont be offended if you use it instead 😉).
 While Voice is awesome, it was lacking in a very specific use case that I had. I wanted to use the chapter info that is embedded in OverDrive/Libby audiobooks, which no audiobook player has that feature built-in.
 <br/>
 
@@ -19,7 +19,7 @@ Fable was birthed from a personal desire to learn Android. In my opinion it has 
 
 Upcoming features:
 <ul>
-<li>Integration with offline sources (NextCloud)</li>
+<li>Integration with cloud sources (NextCloud)</li>
 <li>eReader formats (epub, txt, etc) support</li>
 <li>Syncing location between devices</li>
 </ul>

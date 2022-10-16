@@ -1,6 +1,6 @@
 apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
-apply plugin: 'kotlin-android-extensions'
+apply plugin: 'kotlin-kapt'
 
 android {
 
@@ -13,19 +13,16 @@ android {
         jvmTarget = JavaVersion.VERSION_1_8.toString()
     }
 
-    compileSdkVersion 29
-    buildToolsVersion "29.0.3"
+    compileSdkVersion 33
 
     defaultConfig {
         applicationId "one.fable.fable"
         minSdkVersion 21
-        targetSdkVersion 29
+        targetSdkVersion 33
         versionCode 6
         versionName "1.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
-
-    apply plugin: 'kotlin-kapt'
 
 
     buildTypes {
@@ -35,6 +32,7 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
+
     dataBinding {
         enabled = true
     }
@@ -66,8 +64,10 @@ dependencies {
     implementation 'androidx.recyclerview:recyclerview:1.2.0-alpha03'
 
     //ExoPlayer
-    implementation 'com.google.android.exoplayer:exoplayer:2.11.4'
-    implementation 'com.google.android.exoplayer:extension-mediasession:2.10.0'
+    implementation "androidx.media3:media3-exoplayer:1.0.0-beta02"
+    implementation "androidx.media3:media3-ui:1.0.0-beta02"
+    implementation "androidx.media3:media3-exoplayer-dash:1.0.0-beta02"
+    implementation 'androidx.media3:media3-session:1.0.0-beta02'
 
     //Coroutines
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:1.3.5"
@@ -85,9 +85,9 @@ dependencies {
     implementation "androidx.preference:preference-ktx:1.1.1"
 
     //Tutorial item highlight library
-    implementation 'com.getkeepsafe.taptargetview:taptargetview:1.13.0'
+    implementation 'com.getkeepsafe.taptargetview:taptargetview:1.13.3'
 
     //Palette API for images
-    implementation 'androidx.palette:palette:1.0.0'
+    implementation 'androidx.palette:palette-ktx:1.0.0'
 
 }

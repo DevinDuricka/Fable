@@ -1,5 +1,6 @@
 package one.fable.fable
 
+import android.content.ComponentName
 import android.content.Intent
 import android.media.AudioManager
 import android.media.MediaMetadataRetriever
@@ -8,16 +9,19 @@ import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.provider.DocumentsContract
 import android.provider.MediaStore
+import android.widget.MediaController
 import android.widget.Toast
 import androidx.documentfile.provider.DocumentFile
+import androidx.media3.session.SessionToken
 import androidx.navigation.Navigation
 import androidx.navigation.fragment.NavHostFragment
 import androidx.palette.graphics.Palette
 import com.getkeepsafe.taptargetview.TapTarget
 import com.getkeepsafe.taptargetview.TapTargetView
+import com.google.common.util.concurrent.MoreExecutors
 import kotlinx.coroutines.*
 import one.fable.fable.database.entities.*
-import one.fable.fable.exoplayer.AudioPlayerService
+import one.fable.fable.exoplayer.PlaybackService
 import one.fable.fable.library.flags
 import timber.log.Timber
 import java.util.concurrent.TimeUnit
@@ -72,14 +76,18 @@ class MainActivity : AppCompatActivity() {
 //            val navOptions = NavOptions.Builder().setPopUpTo(R.id.libraryFragment, true).build()
 //            navController.navigate(R.id.libraryFragment, null, navOptions)
 //        }
-        startAudioPlayerService()
+        //startAudioPlayerService()
+        val sessionToken = SessionToken(this, ComponentName(this, PlaybackService::class.java))
+        val mediaControllerFuture = androidx.media3.session.MediaController.Builder(this, sessionToken).buildAsync()
+        mediaControllerFuture.addListener({}, MoreExecutors.directExecutor())
+
         super.onStart()
     }
 
-    fun startAudioPlayerService(){
-        val intent = Intent(applicationContext, AudioPlayerService::class.java)
-        startService(intent)
-    }
+//    fun startAudioPlayerService(){
+//        val intent = Intent(applicationContext, AudioPlayerService::class.java)
+//        startService(intent)
+//    }
 
 
     fun takePersistablePermissionsToDatabaseEntries(directoryUri : Uri){
@@ -206,7 +214,7 @@ class MainActivity : AppCompatActivity() {
                                 if(isLocal(authority)){
                                     val mediaMetadataRetriever = MediaMetadataRetriever()
                                     mediaMetadataRetriever.setDataSource(applicationContext, childUri)
-                                    duration = mediaMetadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION).toLong()
+                                    duration = mediaMetadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)?.toLong()
                                     (mediaMetadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ALBUM))?.let { title = it }
                                     author = mediaMetadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ARTIST)
                                     (mediaMetadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_TITLE))?.let { trackTitle = it }

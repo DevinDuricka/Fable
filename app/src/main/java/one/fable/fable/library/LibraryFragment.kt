@@ -50,7 +50,7 @@ class LibraryFragment : Fragment(R.layout.library_fragment) {
     private lateinit var libraryFragmentViewModel: LibraryFragmentViewModel
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        postponeEnterTransition()
+        //postponeEnterTransition()
         super.onViewCreated(view, savedInstanceState)
         //setHasOptionsMenu(true)
         binding = LibraryFragmentBinding.bind(view)
@@ -77,39 +77,39 @@ class LibraryFragment : Fragment(R.layout.library_fragment) {
             tab.text = getString(libraryTabText[position])
             }.attach()
 
-        binding.libraryExoplayer.player = ExoPlayerMasterObject.exoPlayer
-        binding.libraryExoplayer.showTimeoutMs = -1
+//        binding.libraryExoplayer.player = ExoPlayerMasterObject.exoPlayer
+//        binding.libraryExoplayer.showTimeoutMs = -1
 
-        if (ExoPlayerMasterObject.isAudiobookInitialized()){
-            //BottomSheetBehavior.from(binding.libraryExoplayer).state = BottomSheetBehavior.STATE_EXPANDED
-            binding.libraryExoplayer.visibility = View.VISIBLE
-            //https://stackoverflow.com/questions/9685658/add-padding-on-view-programmatically
-            val scale = resources.displayMetrics.density
-            binding.viewPagerLibrary.setPadding(0,0,0, (90*scale + 0.5F).toInt())
-
-            val clickableArea = binding.libraryExoplayer.findViewById<ConstraintLayout>(R.id.library_bottom_audiobook_player_clickable_area)
-            clickableArea.setOnClickListener { findNavController().navigate(R.id.action_libraryFragment_to_audiobookPlayerFragment) }
-
-
-            val chapterNameObserver = Observer<String> {
-                binding.libraryExoplayer.findViewById<TextView>(R.id.library_bottom_chapter_name).text = it
-            }
-            ExoPlayerMasterObject.chapterName.observe(viewLifecycleOwner, chapterNameObserver)
-
-            binding.libraryExoplayer.findViewById<TextView>(R.id.library_bottom_book_name).text = ExoPlayerMasterObject.audiobook.audiobookTitle
-
-            val cover = binding.libraryExoplayer.findViewById<ImageView>(R.id.library_bottom_cover_image)
-            if (ExoPlayerMasterObject.audiobook.imgThumbnail != null){
-                cover.setImageURI(ExoPlayerMasterObject.audiobook.imgThumbnail)
-            } else {
-                cover.visibility = View.GONE
-            }
-
-        } else {
-            //BottomSheetBehavior.from(binding.libraryExoplayer).state = BottomSheetBehavior.STATE_HIDDEN
-
-            binding.libraryExoplayer.visibility = View.GONE
-        }
+//        if (ExoPlayerMasterObject.isAudiobookInitialized()){
+//            //BottomSheetBehavior.from(binding.libraryExoplayer).state = BottomSheetBehavior.STATE_EXPANDED
+//            binding.libraryExoplayer.visibility = View.VISIBLE
+//            //https://stackoverflow.com/questions/9685658/add-padding-on-view-programmatically
+//            val scale = resources.displayMetrics.density
+//            binding.viewPagerLibrary.setPadding(0,0,0, (90*scale + 0.5F).toInt())
+//
+//            val clickableArea = binding.libraryExoplayer.findViewById<ConstraintLayout>(R.id.library_bottom_audiobook_player_clickable_area)
+//            clickableArea.setOnClickListener { findNavController().navigate(R.id.action_libraryFragment_to_audiobookPlayerFragment) }
+//
+//
+//            val chapterNameObserver = Observer<String> {
+//                binding.libraryExoplayer.findViewById<TextView>(R.id.library_bottom_chapter_name).text = it
+//            }
+//            ExoPlayerMasterObject.chapterName.observe(viewLifecycleOwner, chapterNameObserver)
+//
+//            binding.libraryExoplayer.findViewById<TextView>(R.id.library_bottom_book_name).text = ExoPlayerMasterObject.audiobook.audiobookTitle
+//
+//            val cover = binding.libraryExoplayer.findViewById<ImageView>(R.id.library_bottom_cover_image)
+//            if (ExoPlayerMasterObject.audiobook.imgThumbnail != null){
+//                cover.setImageURI(ExoPlayerMasterObject.audiobook.imgThumbnail)
+//            } else {
+//                cover.visibility = View.GONE
+//            }
+//
+//        } else {
+//            //BottomSheetBehavior.from(binding.libraryExoplayer).state = BottomSheetBehavior.STATE_HIDDEN
+//
+//            binding.libraryExoplayer.visibility = View.GONE
+//        }
 
         if (libraryFragmentViewModel.firstLoad) {
             if (libraryFragmentViewModel.anyAudiobook != null){
@@ -154,7 +154,7 @@ class LibraryFragment : Fragment(R.layout.library_fragment) {
             sharedPreferences.edit().putBoolean("first_library_load", false).apply()
         }
 
-        view.doOnPreDraw { startPostponedEnterTransition() }
+        //view.doOnPreDraw { startPostponedEnterTransition() }
 
 
     }

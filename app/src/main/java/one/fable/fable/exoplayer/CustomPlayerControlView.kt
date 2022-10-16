@@ -5,17 +5,8 @@ import android.content.Context
 import android.util.AttributeSet
 import android.view.View
 import android.widget.*
-import androidx.core.view.forEach
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleObserver
-import androidx.lifecycle.Observer
-import androidx.navigation.NavController
-import androidx.navigation.findNavController
+import androidx.media3.ui.PlayerControlView
 import androidx.preference.PreferenceManager
-
-import com.google.android.exoplayer2.Player
-import com.google.android.exoplayer2.Timeline
-import com.google.android.exoplayer2.ui.PlayerControlView
 import one.fable.fable.R
 import one.fable.fable.exoplayer.ExoPlayerMasterObject
 import timber.log.Timber

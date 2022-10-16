@@ -78,14 +78,12 @@
 
         </androidx.viewpager2.widget.ViewPager2>
 
-        <com.google.android.exoplayer2.ui.PlayerControlView
-            android:id="@+id/library_exoplayer"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:elevation="8dp"
-            android:background="?attr/colorSurface"
-            app:layout_behavior="com.google.android.material.bottomsheet.BottomSheetBehavior"
-            app:controller_layout_id="@layout/library_fragment_player" />
+<!--        <androidx.media3.ui.PlayerControlView-->
+<!--            android:id="@+id/library_exoplayer"-->
+<!--            android:layout_width="match_parent"-->
+<!--            android:layout_height="200dp"-->
+<!--            android:elevation="8dp"-->
+<!--            app:layout_behavior="com.google.android.material.bottomsheet.BottomSheetBehavior" />-->
 
 <!--        </androidx.appcompat.widget.LinearLayoutCompat>-->
     </androidx.coordinatorlayout.widget.CoordinatorLayout>

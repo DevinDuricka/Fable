@@ -9,15 +9,16 @@ import android.util.Log
 import android.util.Xml
 import android.widget.Toast
 import androidx.lifecycle.MutableLiveData
-import com.google.android.exoplayer2.*
-import com.google.android.exoplayer2.Player.TIMELINE_CHANGE_REASON_PREPARED
-import com.google.android.exoplayer2.source.ClippingMediaSource
-import com.google.android.exoplayer2.source.ConcatenatingMediaSource
-import com.google.android.exoplayer2.source.ProgressiveMediaSource
-import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory
-import com.google.android.exoplayer2.util.Util
+import androidx.media3.common.*
+import androidx.media3.common.util.Util
+import androidx.media3.datasource.DefaultDataSourceFactory
+import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.source.ClippingMediaSource
+import androidx.media3.exoplayer.source.ConcatenatingMediaSource
+import androidx.media3.exoplayer.source.ProgressiveMediaSource
 import com.google.android.material.snackbar.Snackbar
 import kotlinx.coroutines.*
+import one.fable.fable.Fable
 import one.fable.fable.convertOverDriveTimeMarkersToMillisecondsAsLong
 import one.fable.fable.database.daos.AudiobookDao
 import one.fable.fable.database.entities.*
@@ -37,8 +38,13 @@ Building feature-rich media apps with ExoPlayer (Google I/O '18) https://www.you
 */
 
 object ExoPlayerMasterObject {
+    val exoPlayer : ExoPlayer = ExoPlayer.Builder(Fable.instance)
+        .setAudioAttributes(AudioAttributes.DEFAULT, true)
+        .setHandleAudioBecomingNoisy(true)
+        .setWakeMode(C.WAKE_MODE_LOCAL)
+        .build()
 
-    lateinit var applicationContext: Context
+
 
     lateinit var audiobookDao: AudiobookDao
 
@@ -72,14 +78,14 @@ object ExoPlayerMasterObject {
         }
     }
 
-    lateinit var exoPlayer : SimpleExoPlayer
-    fun isExoPlayerInitialized() = this::exoPlayer.isInitialized //https://stackoverflow.com/questions/47549015/isinitialized-backing-field-of-lateinit-var-is-not-accessible-at-this-point
-    fun buildExoPlayer(context: Context){
-        if (!this::exoPlayer.isInitialized){
-            exoPlayer = SimpleExoPlayer.Builder(context).build()
-            exoPlayer.addListener(eventListener)
-        }
-    }
+
+//    fun isExoPlayerInitialized() = this::exoPlayer.isInitialized //https://stackoverflow.com/questions/47549015/isinitialized-backing-field-of-lateinit-var-is-not-accessible-at-this-point
+//    fun buildExoPlayer(context: Context){
+//        if (!this::exoPlayer.isInitialized){
+//            exoPlayer = ExoPlayer.Builder(context).build()
+//            exoPlayer.addListener(eventListener)
+//        }
+//    }
 
     fun loadAudiobook(audiobookToLoad: Audiobook){
         var loadNewBook = false
@@ -138,8 +144,8 @@ object ExoPlayerMasterObject {
     suspend fun loadTracks(title :String){
         Timber.i("Loading new tracks")
 
-        val dataSourceFactory = DefaultDataSourceFactory(applicationContext,
-                Util.getUserAgent(applicationContext, "Fable"))
+        val dataSourceFactory = DefaultDataSourceFactory(Fable.instance,
+                Util.getUserAgent(Fable.instance, "Fable"))
         val concatenatingMediaSource = ConcatenatingMediaSource()
 
 
@@ -155,7 +161,7 @@ object ExoPlayerMasterObject {
 
         for (track in tracksWithChapters) {
             val mediaSource = ProgressiveMediaSource.Factory(dataSourceFactory)
-                .createMediaSource(track.track.trackUri)
+                .createMediaSource(MediaItem.fromUri(track.track.trackUri))
 
             //If the track has no chapter data embeded, use the whole track as the window (a psuedo-chapter)
             if (track.chapters.isEmpty()) {
@@ -245,7 +251,7 @@ object ExoPlayerMasterObject {
 
                 if (!track.scannedSourceNames.contains("OverDrive")) {
 
-                    val contentResolver = applicationContext.contentResolver
+                    val contentResolver = Fable.instance.contentResolver
 
                     var inputStream = contentResolver.openInputStream(track.trackUri)
                     val bufferedReader = BufferedReader(InputStreamReader(inputStream))
@@ -361,7 +367,7 @@ object ExoPlayerMasterObject {
 
     //PLAYER EVENT LISTENER CODE todo
     private val eventListener = PlayerEventListener()
-    class PlayerEventListener() : Player.EventListener{
+    class PlayerEventListener() : Player.Listener{
         //var isPlayingBool = false
 
         override fun onIsPlayingChanged(isPlaying: Boolean) {
@@ -417,7 +423,7 @@ object ExoPlayerMasterObject {
                 progress.value = getTimelineDuration()
             }
 
-            if (reason == TIMELINE_CHANGE_REASON_PREPARED){
+//            if (reason == TIMELINE_CHANGE_REASON_PREPARED){
                 windowDurationsSummation.clear()
                 Timber.i("Last Index is: " + exoPlayer.currentTimeline.windowCount)
                 for (index in 0 until timeline.windowCount){
@@ -456,7 +462,7 @@ object ExoPlayerMasterObject {
                         windowDurationsSummation.add(previousValue.plus(duration))
                     }
                 }
-            }
+//            }
             super.onTimelineChanged(timeline, reason)
         }
     }

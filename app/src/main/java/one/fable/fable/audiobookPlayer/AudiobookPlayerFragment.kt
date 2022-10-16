@@ -19,19 +19,13 @@ import androidx.core.view.doOnPreDraw
 import androidx.core.view.marginTop
 import androidx.fragment.app.DialogFragment
 import androidx.lifecycle.Observer
-
-import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.fragment.FragmentNavigatorExtras
 import androidx.navigation.fragment.findNavController
 import androidx.preference.PreferenceManager
 import com.getkeepsafe.taptargetview.TapTarget
 import com.getkeepsafe.taptargetview.TapTargetSequence
-import com.getkeepsafe.taptargetview.TapTargetView
-import kotlinx.android.synthetic.main.exo_player_control_view.view.*
-import one.fable.fable.MainActivity
 import one.fable.fable.R
 import one.fable.fable.databinding.AudiobookPlayerFragmentBinding
-import one.fable.fable.exoplayer.AudioPlayerService
 import one.fable.fable.exoplayer.ExoPlayerMasterObject
 import timber.log.Timber
 import java.util.concurrent.TimeUnit
@@ -49,7 +43,7 @@ class AudiobookPlayerFragment : Fragment(R.layout.audiobook_player_fragment) {
 
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        (activity as MainActivity).startAudioPlayerService()
+        //(activity as MainActivity).startAudioPlayerService()
 
 
         super.onViewCreated(view, savedInstanceState)
@@ -79,36 +73,36 @@ class AudiobookPlayerFragment : Fragment(R.layout.audiobook_player_fragment) {
         //https://github.com/google/ExoPlayer/issues/6741
         //binding.exoplayer.setShowMultiWindowTimeBar(true)
 
-        val chapterNameObserver = Observer<String> {
-            binding.exoplayer.track_name.text = it
-        }
-        ExoPlayerMasterObject.chapterName.observe(viewLifecycleOwner, chapterNameObserver)
-
-        binding.exoplayer.track_name_card.setOnClickListener {
-
-            //view.height
-//            var trackLocationOnScreen = IntArray(2)
-//            binding.exoplayer.track_name.getLocationInWindow(trackLocationOnScreen)
-            //binding.exoplayer.trackName.getLocationOnScreen(trackLocationOnScreen)
-            //binding.exoplayer.trackName.getOffsetForPosition(x, y)
-//            Timber.i("Track selector is at this point: " + trackLocationOnScreen[0])
-//            Timber.i("Track selector is at this point: " + trackLocationOnScreen[1])
-//            Timber.i("Fragment Height: " + view.height)
-
-
-            val extras = FragmentNavigatorExtras(
-                binding.exoplayer.track_name to "track_name",
-                binding.exoplayer.track_name_card to "track_name_card"
-            )
-
-
-            findNavController().navigate(R.id.action_audiobookPlayerFragment_to_trackListFragment, null, null, extras)
-
-
-            //binding.exoplayer
-
-            //findNavController().navigate(AudiobookPlayerFragmentDirections.actionAudiobookPlayerFragmentToTrackListFragment(view.height/2), extras)
-        }
+//        val chapterNameObserver = Observer<String> {
+//            binding.exoplayer.track_name.text = it
+//        }
+//        ExoPlayerMasterObject.chapterName.observe(viewLifecycleOwner, chapterNameObserver)
+//
+//        binding.exoplayer.track_name_card.setOnClickListener {
+//
+//            //view.height
+////            var trackLocationOnScreen = IntArray(2)
+////            binding.exoplayer.track_name.getLocationInWindow(trackLocationOnScreen)
+//            //binding.exoplayer.trackName.getLocationOnScreen(trackLocationOnScreen)
+//            //binding.exoplayer.trackName.getOffsetForPosition(x, y)
+////            Timber.i("Track selector is at this point: " + trackLocationOnScreen[0])
+////            Timber.i("Track selector is at this point: " + trackLocationOnScreen[1])
+////            Timber.i("Fragment Height: " + view.height)
+//
+//
+//            val extras = FragmentNavigatorExtras(
+//                binding.exoplayer.track_name to "track_name",
+//                binding.exoplayer.track_name_card to "track_name_card"
+//            )
+//
+//
+//            findNavController().navigate(R.id.action_audiobookPlayerFragment_to_trackListFragment, null, null, extras)
+//
+//
+//            //binding.exoplayer
+//
+//            //findNavController().navigate(AudiobookPlayerFragmentDirections.actionAudiobookPlayerFragmentToTrackListFragment(view.height/2), extras)
+//        }
 
         binding.audiobookPlayerAppBar.setOnMenuItemClickListener { item: MenuItem? ->
             when (item?.itemId){

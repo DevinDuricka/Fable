@@ -9,9 +9,12 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical">
+
         <com.google.android.material.appbar.AppBarLayout
+            android:id="@+id/audiobookPlayerAppBarLayout"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            app:layout_constraintTop_toTopOf="parent"
             android:elevation="8dp">
 
             <com.google.android.material.appbar.MaterialToolbar
@@ -25,83 +28,91 @@
 
         </com.google.android.material.appbar.AppBarLayout>
 
-        <com.google.android.material.card.MaterialCardView
-            android:id="@+id/player_view_card"
+        <androidx.constraintlayout.widget.ConstraintLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginHorizontal="8dp"
-            android:layout_marginTop="8dp"
-            android:layout_weight="1"
-            android:transitionName="player_view_card"
-            app:cardElevation="2dp">
+            android:layout_height="match_parent">
 
-            <androidx.constraintlayout.widget.ConstraintLayout
+            <TextView
+                android:id="@+id/player_view_audiobook_title"
                 android:layout_width="match_parent"
-                android:layout_height="match_parent">
+                android:layout_height="wrap_content"
+                android:layout_margin="10dp"
+                android:ellipsize="end"
+                android:maxLines="2"
+                android:textSize="24sp"
+                android:textStyle="bold"
+                app:layout_constraintTop_toTopOf="parent"
+                tools:layout_editor_absoluteX="10dp"
+                tools:text="Title" />
 
-                <TextView
-                    android:id="@+id/player_view_audiobook_title"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_margin="10dp"
-                    android:ellipsize="end"
-                    android:maxLines="2"
-                    android:textSize="24sp"
-                    android:textStyle="bold"
-                    android:transitionName="player_view_title"
-                    app:layout_constraintTop_toTopOf="parent"
-                    tools:layout_editor_absoluteX="10dp"
-                    tools:text="Title" />
-
-                <TextView
-                    android:id="@+id/player_view_audiobook_author"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_margin="10dp"
-                    android:ellipsize="end"
-                    android:maxLines="1"
-                    android:textSize="14sp"
-                    android:transitionName="player_view_author"
-                    app:layout_constraintTop_toBottomOf="@id/player_view_audiobook_title"
-                    tools:text="Author" />
+            <TextView
+                android:id="@+id/player_view_audiobook_author"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="10dp"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:textSize="14sp"
+                android:transitionName="player_view_author"
+                app:layout_constraintTop_toBottomOf="@id/player_view_audiobook_title"
+                tools:text="Author" />
 
 
-                <androidx.appcompat.widget.AppCompatImageView
-                    android:id="@+id/player_view_cover"
-                    android:layout_width="0dp"
-                    android:layout_height="0dp"
-                    android:layout_margin="20dp"
-                    android:background="@color/darker_grey"
-                    android:scaleType="centerCrop"
-                    android:src="@drawable/ic_album"
-                    android:transitionName="player_view_cover_image"
-                    app:layout_constraintBottom_toBottomOf="parent"
-                    app:layout_constraintDimensionRatio="1:1"
-                    app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@id/player_view_audiobook_author"
-                    app:layout_constraintVertical_weight="1" />
+            <androidx.appcompat.widget.AppCompatImageView
+                android:id="@+id/player_view_cover"
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                android:layout_margin="20dp"
+                android:background="@color/darker_grey"
+                android:scaleType="centerCrop"
+                android:src="@drawable/ic_album"
+                android:transitionName="player_view_cover_image"
+                app:layout_constraintBottom_toTopOf="@id/track_name"
+                app:layout_constraintDimensionRatio="1:1"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/player_view_audiobook_author"
+                app:layout_constraintVertical_weight="1" />
 
-                <ProgressBar
-                    android:id="@+id/progressBar"
-                    style="?android:attr/progressBarStyleHorizontal"
-                    android:layout_width="0dp"
-                    android:layout_height="4dp"
-                    android:transitionName="progressbar"
-                    android:visibility="gone"
-                    app:layout_constraintBottom_toBottomOf="@id/player_view_cover"
-                    app:layout_constraintEnd_toEndOf="@id/player_view_cover"
-                    app:layout_constraintStart_toStartOf="@id/player_view_cover" />
+            <ProgressBar
+                android:id="@+id/progressBar"
+                style="?android:attr/progressBarStyleHorizontal"
+                android:layout_width="0dp"
+                android:layout_height="4dp"
+                android:transitionName="progressbar"
+                android:visibility="gone"
+                app:layout_constraintBottom_toBottomOf="@id/player_view_cover"
+                app:layout_constraintEnd_toEndOf="@id/player_view_cover"
+                app:layout_constraintStart_toStartOf="@id/player_view_cover" />
 
+            <TextView
+                android:id="@+id/track_name"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="10dp"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:textSize="14sp"
+                android:transitionName="player_view_author"
+                app:layout_constraintBottom_toTopOf="@id/exoplayer"
+                android:text="TRACK 01"
+                tools:text="Track 01" />
 
-            </androidx.constraintlayout.widget.ConstraintLayout>
+            <androidx.media3.ui.LegacyPlayerControlView
+                android:id="@+id/exoplayer"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:layout_constraintBottom_toBottomOf="parent"
+                android:paddingBottom="20dp"
+                app:bar_gravity="bottom"
+                app:show_fastforward_button="true"
+                app:show_next_button="true"
+                app:show_previous_button="true"
+                app:show_rewind_button="true"
+                app:show_shuffle_button="false"
+                app:show_vr_button="false" />
 
-        </com.google.android.material.card.MaterialCardView>
-        <com.example.appleaudiobookcoverapi.CustomPlayerControlView
-            android:id="@+id/exoplayer"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:transitionName="audio_player_exoplayer"/>
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
     </LinearLayout>
-
 </layout>

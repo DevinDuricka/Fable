@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.text.InputType
 import android.text.TextUtils
 import android.view.View
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.preference.*
 import java.util.prefs.PreferenceChangeEvent
@@ -36,8 +37,18 @@ class GlobalSettingsFragment : PreferenceFragmentCompat() {
             editText.inputType = InputType.TYPE_CLASS_NUMBER
         }
 
+        rewindPreference?.setOnPreferenceChangeListener { preference, newValue ->
+            Toast.makeText(context, "Preference will be reflected after app restart", Toast.LENGTH_LONG).show()
+            true
+        }
+
         fastForwardPreference?.setOnBindEditTextListener { editText ->
             editText.inputType = InputType.TYPE_CLASS_NUMBER
+        }
+
+        fastForwardPreference?.setOnPreferenceChangeListener { preference, newValue ->
+            Toast.makeText(context, "Preference will be reflected after app restart", Toast.LENGTH_LONG).show()
+            true
         }
 
         theme?.setOnPreferenceChangeListener(object : Preference.OnPreferenceChangeListener{

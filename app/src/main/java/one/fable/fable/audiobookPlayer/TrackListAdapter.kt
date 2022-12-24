@@ -34,12 +34,10 @@ class TrackListItemViewHolder private constructor(val binding: TrackListItemBind
 
         if (position == ExoPlayerMasterObject.exoPlayer.currentWindowIndex){
             binding.trackListItemName.transitionName = "track_name"
-            binding.trackListItemCard.transitionName = "track_name_card"
             binding.trackListItemEqualizer.visibility = View.VISIBLE
         } else {
             binding.trackListItemEqualizer.visibility = View.GONE
             binding.trackListItemName.transitionName = null
-            binding.trackListItemCard.transitionName = null
         }
 
         binding.root.setOnClickListener {
@@ -47,10 +45,8 @@ class TrackListItemViewHolder private constructor(val binding: TrackListItemBind
             ExoPlayerMasterObject.selectTrack(position)
 
             binding.trackListItemName.transitionName = "track_name"
-            binding.trackListItemCard.transitionName = "track_name_card"
 
             val extras = FragmentNavigatorExtras(
-                binding.trackListItemCard to "track_name_card",
                 binding.trackListItemName to "exoplayer_track_name_transition"
             )
 

@@ -19,11 +19,15 @@ import androidx.core.view.doOnPreDraw
 import androidx.core.view.marginTop
 import androidx.fragment.app.DialogFragment
 import androidx.lifecycle.Observer
+import androidx.media3.common.PlaybackParameters
+import androidx.media3.exoplayer.ExoPlayer
 import androidx.navigation.fragment.FragmentNavigatorExtras
 import androidx.navigation.fragment.findNavController
 import androidx.preference.PreferenceManager
 import com.getkeepsafe.taptargetview.TapTarget
 import com.getkeepsafe.taptargetview.TapTargetSequence
+import com.google.android.material.card.MaterialCardView
+import com.google.android.material.textview.MaterialTextView
 import one.fable.fable.R
 import one.fable.fable.databinding.AudiobookPlayerFragmentBinding
 import one.fable.fable.exoplayer.ExoPlayerMasterObject
@@ -67,18 +71,33 @@ class AudiobookPlayerFragment : Fragment(R.layout.audiobook_player_fragment) {
 
         binding.exoplayer.showTimeoutMs = -1
         binding.exoplayer.player = ExoPlayerMasterObject.exoPlayer
+        binding.exoplayer.setShowMultiWindowTimeBar(true)
+
+        binding.exoplayer.player
+        //binding.exoplayer.findViewById<ImageButton>(androidx.media3.ui.R.id.exo_settings).visibility = View.GONE //Hide the settings cog
+
+        //Assign nested Views
+//        val trackName = binding.exoplayer.findViewById<MaterialTextView>(R.id.track_name)
+//        val trackNameCard = binding.exoplayer.findViewById<MaterialCardView>(R.id.track_name_card)
 
         //todo: figure out how to add the multiwindow timebar
         //https://github.com/google/ExoPlayer/issues/2122
         //https://github.com/google/ExoPlayer/issues/6741
         //binding.exoplayer.setShowMultiWindowTimeBar(true)
 
-//        val chapterNameObserver = Observer<String> {
-//            binding.exoplayer.track_name.text = it
-//        }
-//        ExoPlayerMasterObject.chapterName.observe(viewLifecycleOwner, chapterNameObserver)
+        val chapterNameObserver = Observer<String> {
+            binding.trackName.text = it
+        }
+        ExoPlayerMasterObject.chapterName.observe(viewLifecycleOwner, chapterNameObserver)
+
+        binding.trackName.setOnClickListener {
+            val extras = FragmentNavigatorExtras(
+                binding.trackName to "track_name"
+            )
+            findNavController().navigate(R.id.action_audiobookPlayerFragment_to_trackListFragment, null, null, extras)
+        }
 //
-//        binding.exoplayer.track_name_card.setOnClickListener {
+//        trackNameCard.setOnClickListener {
 //
 //            //view.height
 ////            var trackLocationOnScreen = IntArray(2)
@@ -91,8 +110,8 @@ class AudiobookPlayerFragment : Fragment(R.layout.audiobook_player_fragment) {
 //
 //
 //            val extras = FragmentNavigatorExtras(
-//                binding.exoplayer.track_name to "track_name",
-//                binding.exoplayer.track_name_card to "track_name_card"
+//                trackName to "track_name",
+//                trackNameCard to "track_name_card"
 //            )
 //
 //

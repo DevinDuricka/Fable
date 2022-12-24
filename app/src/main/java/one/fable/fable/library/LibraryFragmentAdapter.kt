@@ -55,7 +55,7 @@ class LibraryFragmentAdapter() : ListAdapter<Audiobook, LibraryItemViewHolder>(L
 class LibraryItemViewHolder private constructor(val binding: LibraryItemBinding) : RecyclerView.ViewHolder(binding.root){
     object libraryItemListener : LibraryItemListener
 
-    public fun bind(item: Audiobook){
+    fun bind(item: Audiobook){
         binding.gridItemTitle.text = item.audiobookTitle
         binding.gridItemAuthor.text = item.audiobookAuthor
         if (item.imgThumbnail != null){
@@ -127,7 +127,7 @@ class LibraryItemViewHolder private constructor(val binding: LibraryItemBinding)
     }
 
     companion object {
-        public fun from(parent: ViewGroup): LibraryItemViewHolder {
+        fun from(parent: ViewGroup): LibraryItemViewHolder {
             val layoutInflater = LayoutInflater.from(parent.context)
 //            val view = layoutInflater.inflate(
 //                R.layout.text_item_view, parent, false

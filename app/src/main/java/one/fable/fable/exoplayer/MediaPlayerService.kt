@@ -1,5 +1,6 @@
 package one.fable.fable.exoplayer
 
+import androidx.media3.common.MediaMetadata
 import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
 
@@ -15,4 +16,5 @@ class PlaybackService : MediaSessionService() {
     // this request.
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaSession?
             = mediaSession
+
 }

@@ -1,6 +1,5 @@
 package one.fable.fable.exoplayer
 
-import androidx.media3.common.MediaMetadata
 import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
 
@@ -12,8 +11,7 @@ class PlaybackService : MediaSessionService() {
         super.onCreate()
         mediaSession = MediaSession.Builder(this, ExoPlayerMasterObject.exoPlayer).build()
     }
-    // Return a MediaSession to link with the MediaController that is making
-    // this request.
+    // Return a MediaSession to link with the MediaController that is making this request.
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaSession?
             = mediaSession
 

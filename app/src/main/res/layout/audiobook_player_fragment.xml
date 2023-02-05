@@ -95,8 +95,13 @@
                 android:textSize="14sp"
                 android:transitionName="player_view_author"
                 app:layout_constraintBottom_toTopOf="@id/exoplayer"
-                android:text="TRACK 01"
+                android:visibility="visible"
                 tools:text="Track 01" />
+<!--            -->
+<!--            <androidx.media3.ui.TrackSelectionView-->
+<!--                android:layout_width="match_parent"-->
+<!--                android:layout_height="wrap_content"-->
+<!--                app:layout_constraintBottom_toTopOf="@id/exoplayer"/>-->
 
             <androidx.media3.ui.LegacyPlayerControlView
                 android:id="@+id/exoplayer"

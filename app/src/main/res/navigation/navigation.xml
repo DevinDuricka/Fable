@@ -30,26 +30,14 @@
         android:name="one.fable.fable.audiobookPlayer.AudiobookPlayerFragment"
         android:label="AudiobookPlayerFragment" >
         <action
-            android:id="@+id/action_audiobookPlayerFragment_to_trackListFragment"
-            app:destination="@id/trackListFragment"
-            app:enterAnim="@anim/slide_in_right"
-            app:exitAnim="@anim/slide_out_left"
-            app:popEnterAnim="@anim/slide_in_left"
-            app:popExitAnim="@anim/slide_out_right" />
-        <action
             android:id="@+id/action_audiobookPlayerFragment_to_globalSettingsFragment"
             app:destination="@id/globalSettingsFragment" />
-    </fragment>
-    <fragment
-        android:id="@+id/trackListFragment"
-        android:name="com.example.appleaudiobookcoverapi.exoplayer.TrackListFragment"
-        android:label="TrackListFragment" >
         <action
-            android:id="@+id/action_trackListFragment_to_audiobookPlayerFragment"
-            app:destination="@id/audiobookPlayerFragment"
-            app:popEnterAnim="@anim/slide_in_left"
-            app:popExitAnim="@anim/slide_out_right"
-            app:popUpTo="@id/audiobookPlayerFragment"
-            app:popUpToInclusive="true" />
+            android:id="@+id/action_audiobookPlayerFragment_to_trackListBottomSheetDialog"
+            app:destination="@id/trackListBottomSheetDialog" />
     </fragment>
+    <dialog
+        android:id="@+id/trackListBottomSheetDialog"
+        android:name="one.fable.fable.audiobookPlayer.TrackListBottomSheetDialog"
+        android:label="TrackListBottomSheetDialog" />
 </navigation>

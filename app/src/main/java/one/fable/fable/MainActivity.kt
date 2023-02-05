@@ -404,5 +404,20 @@ fun Long.millisToMinutesSecondsString() : String{ //MM:SS
 fun Long.millisToHoursMinutesString() : String{ //HH:MM
     return String.format("%02d:%02d",
         TimeUnit.MILLISECONDS.toHours(this),
-        TimeUnit.MILLISECONDS.toMinutes(this) % TimeUnit.HOURS.toSeconds(1))
+        TimeUnit.MILLISECONDS.toMinutes(this) % TimeUnit.HOURS.toMinutes(1))
+}
+
+fun Long.millisToHoursMinutesRemainingString() : String{ //HH:MM
+    return String.format("%02d hrs %02d min remaining",
+        TimeUnit.MILLISECONDS.toHours(this),
+        TimeUnit.MILLISECONDS.toMinutes(this) % TimeUnit.HOURS.toMinutes(1))
+}
+
+fun durationRemaining(elapsed : Long, duration: Long) : String {
+    val remaining = duration - elapsed
+    return if (remaining <= 60000L) {
+        "Audiobook Complete"
+    } else {
+        remaining.millisToHoursMinutesRemainingString()
+    }
 }

@@ -1,81 +1,73 @@
 package one.fable.fable
 
-import android.content.SharedPreferences
 import android.os.Bundle
 import android.text.InputType
-import android.text.TextUtils
 import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.preference.*
-import java.util.prefs.PreferenceChangeEvent
-import java.util.prefs.PreferenceChangeListener
+import timber.log.Timber
 
 
 class GlobalSettingsFragment : PreferenceFragmentCompat() {
-    lateinit var sharedPreferences: SharedPreferences
-    lateinit var seekbarListener: SharedPreferences.OnSharedPreferenceChangeListener
     override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
         setPreferencesFromResource(R.xml.global_preferences, rootKey)
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-
         super.onViewCreated(view, savedInstanceState)
-        sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
 
         val rewindPreference : EditTextPreference? = findPreference("rewind_seconds")
         val fastForwardPreference : EditTextPreference? = findPreference("fastforward_seconds")
         val speedSeekBar : SeekBarPreference? = findPreference("playback_speed_seekbar")
         val theme : ListPreference? = findPreference("theme")
 
-        val settingChangeEventListener: SharedPreferences.OnSharedPreferenceChangeListener
-        //val seekbar : SeekBarPreference? = findPreference("playback_speed")
-
-
+        //--Rewind Preference--
         rewindPreference?.setOnBindEditTextListener { editText ->
-            editText.inputType = InputType.TYPE_CLASS_NUMBER
+            editText.inputType = InputType.TYPE_CLASS_NUMBER //Show only numbers for the rewind preference editor
         }
-
-        rewindPreference?.setOnPreferenceChangeListener { preference, newValue ->
+        //Add a listener to show a toast when the rewind speed changes
+        //Don't add to the editTextListener above as it will show the toast when the keyboard appears
+        rewindPreference?.setOnPreferenceChangeListener { _, _ ->
             Toast.makeText(context, "Preference will be reflected after app restart", Toast.LENGTH_LONG).show()
             true
         }
 
+
+        //--Fast Forward Preference
         fastForwardPreference?.setOnBindEditTextListener { editText ->
-            editText.inputType = InputType.TYPE_CLASS_NUMBER
+            editText.inputType = InputType.TYPE_CLASS_NUMBER //Show only numbers for the fast forward preference editor
         }
-
-        fastForwardPreference?.setOnPreferenceChangeListener { preference, newValue ->
+        //Add a listener to show a toast when the fast forward speed changes
+        //Don't add to the editTextListener above as it will show the toast when the keyboard appears
+        fastForwardPreference?.setOnPreferenceChangeListener { _, _ ->
             Toast.makeText(context, "Preference will be reflected after app restart", Toast.LENGTH_LONG).show()
             true
         }
 
-        theme?.setOnPreferenceChangeListener(object : Preference.OnPreferenceChangeListener{
-            override fun onPreferenceChange(preference: Preference?, newValue: Any?): Boolean {
-                when (newValue){
-                    "1" -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
-                    "2" -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
-                    "-1" -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
-                }
-                return true
+        //Theme preference listener
+        theme?.setOnPreferenceChangeListener { _, newValue ->
+            when (newValue){
+                "1" -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
+                "2" -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
+                "-1" -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
             }
-        })
-        //AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
-
-        speedSeekBar?.title = speedSeekBar?.value?.let { setSpeedSeekBarText(it) }
-
-        seekbarListener = SharedPreferences.OnSharedPreferenceChangeListener { sharedPreferences, key ->
-            if (key == "playback_speed_seekbar"){
-                speedSeekBar?.title = setSpeedSeekBarText(sharedPreferences.getInt(key, 10))
-            }
+            true
         }
 
-        sharedPreferences.registerOnSharedPreferenceChangeListener(seekbarListener)
-
+        //Speed Seekbar Preference
+        speedSeekBar?.title = speedSeekBar?.value?.let { formatSpeedSeekBarText(it) } //This will initialize the speedseekbar with the applicable text
+        speedSeekBar?.setOnPreferenceChangeListener { _, newValue ->
+            try {
+                speedSeekBar.title = formatSpeedSeekBarText(newValue as Int) //The new value should always be an Int, but just in case, catch it
+            } catch (e : Exception) {
+                Timber.e(e)
+            }
+            true
+        }
     }
 
-    fun setSpeedSeekBarText(speed: Int) : String{
+    private fun formatSpeedSeekBarText(speed: Int) : String{
         val playbackSpeedFloat = speed/10.0
         return "Default playback speed: " + playbackSpeedFloat + "x"
     }

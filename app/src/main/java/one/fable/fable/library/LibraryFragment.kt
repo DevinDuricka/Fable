@@ -103,6 +103,10 @@ class LibraryFragment : Fragment(R.layout.library_fragment) {
                 inProgressHeader.visibility = View.GONE
                 inProgressDivider.visibility = View.GONE
                 inProgressRecyclerView.visibility = View.GONE
+            } else {
+                inProgressHeader.visibility = View.VISIBLE
+                inProgressDivider.visibility = View.VISIBLE
+                inProgressRecyclerView.visibility = View.VISIBLE
             }
             inProgressItemAdapter.submitList(it)
         }
@@ -112,6 +116,10 @@ class LibraryFragment : Fragment(R.layout.library_fragment) {
                 notStartedHeader.visibility = View.GONE
                 notStartedDivider.visibility = View.GONE
                 notStartedRecyclerView.visibility = View.GONE
+            } else {
+                notStartedHeader.visibility = View.VISIBLE
+                notStartedDivider.visibility = View.VISIBLE
+                notStartedRecyclerView.visibility = View.VISIBLE
             }
             notStartedItemAdapter.submitList(it)
         }
@@ -121,6 +129,10 @@ class LibraryFragment : Fragment(R.layout.library_fragment) {
                 finishedHeader.visibility = View.GONE
                 finishedDivider.visibility = View.GONE
                 finishedRecyclerView.visibility = View.GONE
+            } else {
+                finishedHeader.visibility = View.VISIBLE
+                finishedDivider.visibility = View.VISIBLE
+                finishedRecyclerView.visibility = View.VISIBLE
             }
             finishedItemAdapter.submitList(it)
         }

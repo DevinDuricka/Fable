@@ -36,10 +36,6 @@ import java.util.concurrent.TimeUnit
 
 class AudiobookPlayerFragment : Fragment(R.layout.audiobook_player_fragment) {
 
-    companion object {
-        fun newInstance() = AudiobookPlayerFragment()
-    }
-
     //private lateinit var viewModel: AudiobookPlayerViewModel //= ViewModelProvider(requireActivity()).get(AudiobookPlayerViewModel::class.java)
     //private lateinit var viewModelFactory: AudiobookPlayerViewModelFactory
     private lateinit var binding: AudiobookPlayerFragmentBinding
@@ -91,10 +87,12 @@ class AudiobookPlayerFragment : Fragment(R.layout.audiobook_player_fragment) {
         ExoPlayerMasterObject.chapterName.observe(viewLifecycleOwner, chapterNameObserver)
 
         binding.trackName.setOnClickListener {
-            val extras = FragmentNavigatorExtras(
-                binding.trackName to "track_name"
-            )
-            findNavController().navigate(R.id.action_audiobookPlayerFragment_to_trackListFragment, null, null, extras)
+//            val extras = FragmentNavigatorExtras(
+//                binding.trackName to "track_name"
+//            )
+//            findNavController().navigate(R.id.action_audiobookPlayerFragment_to_trackListFragment, null, null, extras)
+
+            findNavController().navigate(R.id.action_audiobookPlayerFragment_to_trackListBottomSheetDialog)
         }
 //
 //        trackNameCard.setOnClickListener {

@@ -1,10 +1,9 @@
 package one.fable.fable.exoplayer
 
+import android.annotation.SuppressLint
 import android.content.SharedPreferences
 import android.graphics.Bitmap
 import android.graphics.ImageDecoder
-import android.graphics.drawable.BitmapDrawable
-import android.graphics.drawable.Drawable
 import android.net.Uri
 import android.os.Build
 import android.os.CountDownTimer
@@ -12,12 +11,9 @@ import android.os.Handler
 import android.os.Looper
 import android.provider.MediaStore
 import android.util.Xml
-import androidx.core.net.toFile
 import androidx.lifecycle.MutableLiveData
 import androidx.media3.common.*
-import androidx.media3.common.MediaMetadata.PICTURE_TYPE_FRONT_COVER
 import androidx.media3.exoplayer.ExoPlayer
-import androidx.media3.exoplayer.SeekParameters
 import androidx.preference.PreferenceManager
 import kotlinx.coroutines.*
 import one.fable.fable.Fable
@@ -42,13 +38,40 @@ Building feature-rich media apps with ExoPlayer (Google I/O '18) https://www.you
 */
 
 object ExoPlayerMasterObject {
-    val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(Fable.instance)
-    val rewindAmountInSeconds = sharedPreferences.getString("rewind_seconds", "")
-    val fastforwardAmountInSeconds = sharedPreferences.getString("fastforward_seconds", "")
+    //To build the ExoPlayer object, we need to first get the app shared preferences (or set the shared preferences to default values) for the rewind and fast forward amounts
+    private val sharedPreferences : SharedPreferences =
+        PreferenceManager.getDefaultSharedPreferences(Fable.instance).also {
+            registerOnSharedPreferenceChangedListener(it)
+        }
+    //Get the shared preference values
+    private val rewindAmountInSeconds = sharedPreferences.getString("rewind_seconds", "10") //Get the string representation of the rewind amount (in seconds). If it doesn't exist yet, set to the default of 10 seconds
+    private val fastForwardAmountInSeconds = sharedPreferences.getString("fastforward_seconds", "30") //Get the string representation of the fast forward amount (in seconds). If it doesn't exist yet, set to the default of 30 seconds
+    private var globalPlaybackSpeed = sharedPreferences.getInt("playback_speed_seekbar", 10) //Initialize the global playback speed with the sharedPref value (or set the default of 10 aka 1.0x)
+        set(value) { field = value
+            //Essentially we're building on the sharedPref listener and when we change the global playback speed, we'll also trigger this code (from the set)
+            if(isAudiobookInitialized()){
+                if (audiobook.playbackSpeed == null){ //Only change the playback speed if the audiobook itself doesn't have one already set (i.e. the audiobook uses the global speed)
+                    setPlaybackSpeed(value)
+                }
+            }
+        }
 
-    val rewindAmount : Long = rewindAmountInSeconds?.toLongOrNull()?.let { TimeUnit.SECONDS.toMillis(it) } ?: 10000L
-    val fastforwardAmount : Long = fastforwardAmountInSeconds?.toLongOrNull()?.let { TimeUnit.SECONDS.toMillis(it) } ?: 30000L
+    //This listener can actually notify of any shared preference change.
+    //In this case, we only care about the playback speed, as rewind and fast forward cannot be changed after the ExoPlayer object has been built
+    private fun registerOnSharedPreferenceChangedListener(defaultSharedPreferences : SharedPreferences) {
+        defaultSharedPreferences.registerOnSharedPreferenceChangeListener { sharedPreferences, key ->
+            when (key) {
+                "playback_speed_seekbar" -> { //Listen for the global speed change
+                    sharedPreferences?.getInt(key, 10)?.let { updatedGlobalPlaybackSpeed ->
+                        globalPlaybackSpeed = updatedGlobalPlaybackSpeed //Invoke the custom setter (kinda like a "observer", but it doesn't depend on a viewLifecycleOwner)
+                    }
+                }
+            }
+        }
+    }
 
+    //Build the ExoPlayer
+    @SuppressLint("UnsafeOptInUsageError")
     val exoPlayer : ExoPlayer = ExoPlayer.Builder(Fable.instance)
         .setAudioAttributes(
             AudioAttributes.Builder()
@@ -57,16 +80,18 @@ object ExoPlayerMasterObject {
                 .build(),
             true
         )
-        .setSeekBackIncrementMs(rewindAmount)
-        .setSeekForwardIncrementMs(fastforwardAmount)
+        .setSeekBackIncrementMs(
+            rewindAmountInSeconds?.toLongOrNull()?.let { TimeUnit.SECONDS.toMillis(it) } ?: 10000L //Convert the rewind time in seconds to milliseconds. Or assign the default of 10000 milliseconds (10 seconds)
+        )
+        .setSeekForwardIncrementMs(
+            fastForwardAmountInSeconds?.toLongOrNull()?.let { TimeUnit.SECONDS.toMillis(it) } ?: 30000L //Convert the fast forward time in seconds to milliseconds. Or assign the default of 30000 milliseconds (30 seconds)
+        )
         .setHandleAudioBecomingNoisy(true)
         .setWakeMode(C.WAKE_MODE_LOCAL)
         .build()
 
 
     lateinit var audiobookDao: AudiobookDao
-
-    val audioPlaybackWindows = mutableListOf<AudioPlaybackWindow>()
 
     var coverByteArray : ByteArray? = null
 
@@ -80,32 +105,9 @@ object ExoPlayerMasterObject {
     var audiobookTracks = listOf<Track>()
     var tracksWithChapters = listOf<TrackWithChapters>()
 
-    val progress = MutableLiveData<Long>()
-
     val windowDurationsSummation = mutableListOf<Long>()
 
     private var loadBookJob : Job? = null
-
-    //lateinit var sharedPreferences: SharedPreferences
-    val settingChangeEventListener = SharedPreferences.OnSharedPreferenceChangeListener{ sharedPreferences: SharedPreferences?, key: String? ->
-        if (key == "playback_speed_seekbar"){
-            globalPlaybackSpeed.value = sharedPreferences?.getInt(key, 10)
-            if(isAudiobookInitialized()){
-                if (audiobook.playbackSpeed == null){
-                    globalPlaybackSpeed.value?.let { setPlaybackSpeed(it) }
-                }
-            }
-        }
-    }
-
-
-//    fun isExoPlayerInitialized() = this::exoPlayer.isInitialized //https://stackoverflow.com/questions/47549015/isinitialized-backing-field-of-lateinit-var-is-not-accessible-at-this-point
-//    fun buildExoPlayer(context: Context){
-//        if (!this::exoPlayer.isInitialized){
-//            exoPlayer = ExoPlayer.Builder(context).build()
-//            exoPlayer.addListener(eventListener)
-//        }
-//    }
 
     fun loadAudiobook(audiobookToLoad: Audiobook){
         var loadNewBook = false
@@ -158,12 +160,6 @@ object ExoPlayerMasterObject {
             bitmap.compress(Bitmap.CompressFormat.JPEG, 10, stream)
             coverByteArray = stream.toByteArray()
         } ?: return
-    }
-
-
-    fun setSharedPreferencesAndListener(){
-        sharedPreferences.registerOnSharedPreferenceChangeListener(settingChangeEventListener)
-        globalPlaybackSpeed.value = sharedPreferences.getInt("playback_speed_seekbar", 10)
     }
 
     suspend fun getTracks(title: String){
@@ -265,18 +261,21 @@ object ExoPlayerMasterObject {
 
 
 
-        audiobook.playbackSpeed?.let { setPlaybackSpeed(it) } ?: run {
-            globalPlaybackSpeed.value?.let {
-                setPlaybackSpeed(it)
-            }
+        audiobook.playbackSpeed?.let { audiobookPlaybackSpeed ->
+            setPlaybackSpeed(audiobookPlaybackSpeed)
+        } ?: run {
+            setPlaybackSpeed(globalPlaybackSpeed) //Reset to the global value
         }
 
         if (invalidTrackDurationTrigger) {
+            windowDurationsSummation.clear()
             //TODO Delay movement to Audiobook fragment until entire duration is captured
             val durationListener = DurationPlayerListener({})
             exoPlayer.addListener(durationListener)
             exoPlayer.seekTo(0, 0)
         } else {
+            exoPlayer.addListener(PlayerListener)
+
             val windowIndex = audiobook.windowIndex
             val windowLocation = audiobook.windowLocation
 
@@ -290,50 +289,16 @@ object ExoPlayerMasterObject {
         }
 
         //getMediaItemDurations()
-
-
-
     }
 
-    private fun getMediaItemDurations(){
-        windowDurationsSummation.clear()
-
-        val timeline = exoPlayer.currentTimeline
-        for (index in 0 until timeline.windowCount){
-            var window = Timeline.Window()
-            timeline.getWindow(index, window)
-
-            var duration = window.durationMs //duration = window.getDurationUs() / 1000
-            //TODO: Someday when the fix gets pushed to a release, get rid of this
-            //https://github.com/google/ExoPlayer/issues/7314
-            if (duration <= 0){
-                val outsideCalculatedDuration = audioPlaybackWindows[index].duration
-                if (outsideCalculatedDuration != null){
-                    duration = outsideCalculatedDuration
-                } else {
-                    val period = Timeline.Period()
-                    timeline.getPeriod(window.firstPeriodIndex, period)
-
-                    duration = period.durationMs - audioPlaybackWindows[index].startPos
-                }
-                if (duration < 0){
-                    val trackAtIndexOrNull = audiobookTracks.elementAtOrNull(index)
-                    if (trackAtIndexOrNull != null) {
-                        trackAtIndexOrNull.trackLength?.let { duration = it }
-                    }
-                }
-                if (duration < 0){
-                    duration = 0
-                }
-            }
-
-            val previousValue = windowDurationsSummation.lastOrNull()
-            if (previousValue == null) {
-                windowDurationsSummation.add(duration)
-            } else {
-                windowDurationsSummation.add(previousValue.plus(duration))
-            }
+    fun getListOfTimelineWindows() : ArrayList<String> {
+        val mediaItemTitles = ArrayList<String>()
+        for (index in 0 .. exoPlayer.currentTimeline.windowCount) {
+            val window = Timeline.Window()
+            exoPlayer.currentTimeline.getWindow(index, window)
+            mediaItemTitles.add(window.mediaItem.mediaMetadata.title.toString())
         }
+        return mediaItemTitles
     }
 
     suspend fun checkFileForChapterInfo(tracks: List<Track>) {
@@ -356,9 +321,9 @@ object ExoPlayerMasterObject {
 
                     while (iterator.hasNext() && iteratorCounter <= 500 && line.isBlank()) {
                         val fileLine = iterator.next()
-                            if (fileLine.contains("OverDrive MediaMarkers")) {
-                                line = fileLine
-                            }
+                        if (fileLine.contains("OverDrive MediaMarkers")) {
+                            line = fileLine
+                        }
                         iteratorCounter += 1
                     }
                     bufferedReader.close()
@@ -449,7 +414,7 @@ object ExoPlayerMasterObject {
     val progressTrackerRunnable = object : Runnable{
         override fun run() {
             updateAudiobookObjectLocation()
-            progressTrackerHandler.postDelayed(this, 400)
+            progressTrackerHandler.postDelayed(this, 5000) //Update the audiobook location every 5 seconds
         }
     }
 
@@ -460,6 +425,7 @@ object ExoPlayerMasterObject {
         return timelineDuration
     }
 
+    //This is kind of a beta item. It's intended to cycle through each media item to get the exact length of it.
     class DurationPlayerListener(private val callback: () -> Unit) : Player.Listener{
         override fun onTimelineChanged(timeline: Timeline, reason: Int) {
             super.onTimelineChanged(timeline, reason)
@@ -473,7 +439,7 @@ object ExoPlayerMasterObject {
                     exoPlayer.seekToNextMediaItem()
                 } else {
                     exoPlayer.removeListener(this)
-                    exoPlayer.addListener(eventListener)
+                    exoPlayer.addListener(PlayerListener)
 
                     val windowIndex = audiobook.windowIndex
                     val windowLocation = audiobook.windowLocation
@@ -494,11 +460,9 @@ object ExoPlayerMasterObject {
     }
 
     //PLAYER EVENT LISTENER CODE todo
-    private val eventListener = PlayerEventListener()
-//        .also {
-//        exoPlayer.addListener(it)
-//    }
-    class PlayerEventListener() : Player.Listener{
+    //private val eventListener = PlayerEventListener()
+
+    object PlayerListener : Player.Listener{
         //var isPlayingBool = false
 
         override fun onIsPlayingChanged(isPlaying: Boolean) {
@@ -517,32 +481,18 @@ object ExoPlayerMasterObject {
         override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
             super.onMediaItemTransition(mediaItem, reason)
             chapterName.value = mediaItem?.mediaMetadata?.title.toString()
-            progress.value = getTimelineDuration()
-        }
-
-        override fun onTimelineChanged(timeline: Timeline, reason: Int) {
-            /*------Detecting when playback transitions to another item------
-                        (continuation of the info above)
-            This last one is actually a .onTimeLineChanged
-            3. EventListener.onTimelineChanged with reason = Player.TIMELINE_CHANGE_REASON_DYNAMIC.
-            This happens when the playlist changes, e.g. if items are added, moved, or removed.
-             */
-            if (audioPlaybackWindows.isNotEmpty()){
-                Timber.i("Timeline Changed")
-                chapterName.value = audioPlaybackWindows[exoPlayer.currentMediaItemIndex].Name
-                progress.value = getTimelineDuration()
+            updateAudiobookObjectLocation()
+            CoroutineScope(Dispatchers.IO).launch{
+                updateAudiobook()
             }
-
-            super.onTimelineChanged(timeline, reason)
         }
-    }
 
+    }
 
     fun updateAudiobookObjectLocation(){
         audiobook.windowIndex = exoPlayer.currentMediaItemIndex
         audiobook.windowLocation = exoPlayer.currentPosition
         audiobook.timelineDuration = getTimelineDuration()
-        progress.value = audiobook.timelineDuration
         audiobook.lastPlayedTimeStamp = System.currentTimeMillis()
 
         if (audiobook.duration > 0L) {
@@ -552,12 +502,6 @@ object ExoPlayerMasterObject {
                 audiobook.progressState = PROGRESS_IN_PROGRESS
             }
         }
-
-//        if (exoPlayer.currentWindowIndex == exoPlayer.currentTimeline.windowCount - 1){
-//            audiobook.progressState = PROGRESS_FINISHED
-//        } else {
-//            audiobook.progressState = PROGRESS_IN_PROGRESS
-//        }
     }
 
     suspend fun updateAudiobook(){
@@ -589,12 +533,10 @@ object ExoPlayerMasterObject {
     val playbackSpeed = MutableLiveData<String>()
     val playbackSpeedAsInt = MutableLiveData<Int>()
 
-    val globalPlaybackSpeed = MutableLiveData<Int>()
-
     fun setPlaybackSpeed(speedAsInt: Int){
         val speedAsFloat = speedAsInt / 10.0f
         val playbackParameters = PlaybackParameters(speedAsFloat)
-        exoPlayer.setPlaybackParameters(playbackParameters)
+        exoPlayer.playbackParameters = playbackParameters
         playbackSpeedAsInt.value = speedAsInt
         playbackSpeed.value = speedAsFloat.toString() + "x"
     }
@@ -605,7 +547,8 @@ object ExoPlayerMasterObject {
     }
 
     fun resetSpeedToDefault(){
-        globalPlaybackSpeed.value?.let { setPlaybackSpeed(it) }
+        setPlaybackSpeed(globalPlaybackSpeed)
+
         audiobook?.playbackSpeed = null
         CoroutineScope(Dispatchers.IO).launch{
             updateAudiobook()

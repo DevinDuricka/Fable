@@ -1,14 +1,11 @@
 package one.fable.fable
 
 import android.app.Application
-import android.content.Intent
-import android.media.AudioManager
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.preference.PreferenceManager
 import one.fable.fable.database.FableDatabase
 import one.fable.fable.database.daos.AudiobookDao
 import one.fable.fable.database.daos.DirectoryDao
-import one.fable.fable.exoplayer.AudioPlayerService
 import one.fable.fable.exoplayer.ExoPlayerMasterObject
 import timber.log.Timber
 
@@ -19,8 +16,13 @@ class Fable : Application() {
     lateinit var directoryDao: DirectoryDao
     fun isdirectoriesDaoInitialized() :Boolean = this::directoryDao.isInitialized
 
+    companion object {
+        lateinit var instance: Fable private set
+    }
+
     override fun onCreate() {
         super.onCreate()
+        instance = this
         Timber.plant(Timber.DebugTree())
         initalizeDependecies()
 
@@ -34,9 +36,7 @@ class Fable : Application() {
         audiobookDao = FableDatabase.getInstance(applicationContext).audiobookDao
         directoryDao = FableDatabase.getInstance(applicationContext).directoryDao
 
-        ExoPlayerMasterObject.applicationContext = applicationContext
-        ExoPlayerMasterObject.buildExoPlayer(applicationContext)
-        ExoPlayerMasterObject.setSharedPreferencesAndListener(PreferenceManager.getDefaultSharedPreferences(applicationContext))
+        //ExoPlayerMasterObject.setSharedPreferencesAndListener()
         ExoPlayerMasterObject.audiobookDao = audiobookDao
     }
 

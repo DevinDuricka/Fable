@@ -19,28 +19,22 @@ import androidx.core.view.doOnPreDraw
 import androidx.core.view.marginTop
 import androidx.fragment.app.DialogFragment
 import androidx.lifecycle.Observer
-
-import androidx.lifecycle.ViewModelProvider
+import androidx.media3.common.PlaybackParameters
+import androidx.media3.exoplayer.ExoPlayer
 import androidx.navigation.fragment.FragmentNavigatorExtras
 import androidx.navigation.fragment.findNavController
 import androidx.preference.PreferenceManager
 import com.getkeepsafe.taptargetview.TapTarget
 import com.getkeepsafe.taptargetview.TapTargetSequence
-import com.getkeepsafe.taptargetview.TapTargetView
-import kotlinx.android.synthetic.main.exo_player_control_view.view.*
-import one.fable.fable.MainActivity
+import com.google.android.material.card.MaterialCardView
+import com.google.android.material.textview.MaterialTextView
 import one.fable.fable.R
 import one.fable.fable.databinding.AudiobookPlayerFragmentBinding
-import one.fable.fable.exoplayer.AudioPlayerService
 import one.fable.fable.exoplayer.ExoPlayerMasterObject
 import timber.log.Timber
 import java.util.concurrent.TimeUnit
 
 class AudiobookPlayerFragment : Fragment(R.layout.audiobook_player_fragment) {
-
-    companion object {
-        fun newInstance() = AudiobookPlayerFragment()
-    }
 
     //private lateinit var viewModel: AudiobookPlayerViewModel //= ViewModelProvider(requireActivity()).get(AudiobookPlayerViewModel::class.java)
     //private lateinit var viewModelFactory: AudiobookPlayerViewModelFactory
@@ -49,7 +43,7 @@ class AudiobookPlayerFragment : Fragment(R.layout.audiobook_player_fragment) {
 
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        (activity as MainActivity).startAudioPlayerService()
+        //(activity as MainActivity).startAudioPlayerService()
 
 
         super.onViewCreated(view, savedInstanceState)
@@ -73,6 +67,14 @@ class AudiobookPlayerFragment : Fragment(R.layout.audiobook_player_fragment) {
 
         binding.exoplayer.showTimeoutMs = -1
         binding.exoplayer.player = ExoPlayerMasterObject.exoPlayer
+        binding.exoplayer.setShowMultiWindowTimeBar(true)
+
+        binding.exoplayer.player
+        //binding.exoplayer.findViewById<ImageButton>(androidx.media3.ui.R.id.exo_settings).visibility = View.GONE //Hide the settings cog
+
+        //Assign nested Views
+//        val trackName = binding.exoplayer.findViewById<MaterialTextView>(R.id.track_name)
+//        val trackNameCard = binding.exoplayer.findViewById<MaterialCardView>(R.id.track_name_card)
 
         //todo: figure out how to add the multiwindow timebar
         //https://github.com/google/ExoPlayer/issues/2122
@@ -80,35 +82,44 @@ class AudiobookPlayerFragment : Fragment(R.layout.audiobook_player_fragment) {
         //binding.exoplayer.setShowMultiWindowTimeBar(true)
 
         val chapterNameObserver = Observer<String> {
-            binding.exoplayer.track_name.text = it
+            binding.trackName.text = it
         }
         ExoPlayerMasterObject.chapterName.observe(viewLifecycleOwner, chapterNameObserver)
 
-        binding.exoplayer.track_name_card.setOnClickListener {
+        binding.trackName.setOnClickListener {
+//            val extras = FragmentNavigatorExtras(
+//                binding.trackName to "track_name"
+//            )
+//            findNavController().navigate(R.id.action_audiobookPlayerFragment_to_trackListFragment, null, null, extras)
 
-            //view.height
-//            var trackLocationOnScreen = IntArray(2)
-//            binding.exoplayer.track_name.getLocationInWindow(trackLocationOnScreen)
-            //binding.exoplayer.trackName.getLocationOnScreen(trackLocationOnScreen)
-            //binding.exoplayer.trackName.getOffsetForPosition(x, y)
-//            Timber.i("Track selector is at this point: " + trackLocationOnScreen[0])
-//            Timber.i("Track selector is at this point: " + trackLocationOnScreen[1])
-//            Timber.i("Fragment Height: " + view.height)
-
-
-            val extras = FragmentNavigatorExtras(
-                binding.exoplayer.track_name to "track_name",
-                binding.exoplayer.track_name_card to "track_name_card"
-            )
-
-
-            findNavController().navigate(R.id.action_audiobookPlayerFragment_to_trackListFragment, null, null, extras)
-
-
-            //binding.exoplayer
-
-            //findNavController().navigate(AudiobookPlayerFragmentDirections.actionAudiobookPlayerFragmentToTrackListFragment(view.height/2), extras)
+            findNavController().navigate(R.id.action_audiobookPlayerFragment_to_trackListBottomSheetDialog)
         }
+//
+//        trackNameCard.setOnClickListener {
+//
+//            //view.height
+////            var trackLocationOnScreen = IntArray(2)
+////            binding.exoplayer.track_name.getLocationInWindow(trackLocationOnScreen)
+//            //binding.exoplayer.trackName.getLocationOnScreen(trackLocationOnScreen)
+//            //binding.exoplayer.trackName.getOffsetForPosition(x, y)
+////            Timber.i("Track selector is at this point: " + trackLocationOnScreen[0])
+////            Timber.i("Track selector is at this point: " + trackLocationOnScreen[1])
+////            Timber.i("Fragment Height: " + view.height)
+//
+//
+//            val extras = FragmentNavigatorExtras(
+//                trackName to "track_name",
+//                trackNameCard to "track_name_card"
+//            )
+//
+//
+//            findNavController().navigate(R.id.action_audiobookPlayerFragment_to_trackListFragment, null, null, extras)
+//
+//
+//            //binding.exoplayer
+//
+//            //findNavController().navigate(AudiobookPlayerFragmentDirections.actionAudiobookPlayerFragmentToTrackListFragment(view.height/2), extras)
+//        }
 
         binding.audiobookPlayerAppBar.setOnMenuItemClickListener { item: MenuItem? ->
             when (item?.itemId){

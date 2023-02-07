@@ -10,16 +10,13 @@ import one.fable.fable.database.entities.Audiobook
 import one.fable.fable.exoplayer.ExoPlayerMasterObject
 
 class LibraryFragmentViewModel : ViewModel() {
-    lateinit var notStartedAudiobooks : LiveData<List<Audiobook>>
-    lateinit var inProgressAudiobooks : LiveData<List<Audiobook>>
-    lateinit var completeAudiobooks : LiveData<List<Audiobook>>
+    var notStartedAudiobooks : LiveData<List<Audiobook>> = ExoPlayerMasterObject.audiobookDao.getNotStartedAudiobooks()
+    var inProgressAudiobooks : LiveData<List<Audiobook>> = ExoPlayerMasterObject.audiobookDao.getInProgressAudiobooks()
+    var completeAudiobooks : LiveData<List<Audiobook>> = ExoPlayerMasterObject.audiobookDao.getFinishedAudiobooks()
     var anyAudiobook : Audiobook? = null
     var firstLoad = true
 
     init {
-        inProgressAudiobooks = ExoPlayerMasterObject.audiobookDao.getInProgressAudiobooks()
-        notStartedAudiobooks = ExoPlayerMasterObject.audiobookDao.getNotStartedAudiobooks()
-        completeAudiobooks = ExoPlayerMasterObject.audiobookDao.getFinishedAudiobooks()
         CoroutineScope(Dispatchers.IO).launch {
             anyAudiobook = ExoPlayerMasterObject.audiobookDao.getAnyInProgressAudiobooks()
         }
